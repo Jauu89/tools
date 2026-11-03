@@ -26,6 +26,7 @@ class MainActivity : AppCompatActivity() {
             setOnClickListener {
                 prefs.edit().putString("key", key.text.toString().trim()).apply()
                 val perms = mutableListOf(Manifest.permission.RECORD_AUDIO)
+                if (Build.VERSION.SDK_INT >= 31) perms += Manifest.permission.BLUETOOTH_CONNECT
                 if (Build.VERSION.SDK_INT >= 33) perms += Manifest.permission.POST_NOTIFICATIONS
                 requestPermissions(perms.toTypedArray(), 1)
             }

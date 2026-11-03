@@ -8,7 +8,9 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.media.AudioAttributes
+import android.media.AudioDeviceInfo
 import android.media.AudioFormat
+import android.media.AudioManager
 import android.media.AudioTrack
 import android.os.Build
 import android.os.Bundle
@@ -39,6 +41,7 @@ class ListenService : Service(), TextToSpeech.OnInitListener {
     private var silence: AudioTrack? = null
     private var claude: Claude? = null
     private var busy = false
+    private var scoOn = false
     private val main = Handler(Looper.getMainLooper())
 
     override fun onCreate() {
@@ -115,16 +118,18 @@ class ListenService : Service(), TextToSpeech.OnInitListener {
             say("Este móvil no tiene reconocimiento de voz."); busy = false; return
         }
         tts.stop()
+        routeMicToWatch()
         recognizer?.destroy()
         recognizer = SpeechRecognizer.createSpeechRecognizer(this).apply {
             setRecognitionListener(object : RecognitionListener {
                 override fun onResults(r: Bundle) {
+                    releaseMic()
                     val t = r.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()
                     if (t.isNullOrBlank()) { busy = false; return }
                     notify("Tú: $t", CH_REPLY)
                     ask(t)
                 }
-                override fun onError(e: Int) { busy = false; say("No te he oído.") }
+                override fun onError(e: Int) { releaseMic(); busy = false; say("No te he oído.") }
                 override fun onReadyForSpeech(p: Bundle?) { notify("Escuchando…", CH_STATUS) }
                 override fun onBeginningOfSpeech() {}
                 override fun onRmsChanged(v: Float) {}
@@ -138,6 +143,29 @@ class ListenService : Service(), TextToSpeech.OnInitListener {
                 putExtra(RecognizerIntent.EXTRA_LANGUAGE, "es-ES")
             })
         }
+    }
+
+    /** Si el reloj está conectado como auricular Bluetooth (llamadas), usa su micrófono. */
+    private fun routeMicToWatch() {
+        val am = getSystemService(AudioManager::class.java)
+        try {
+            if (Build.VERSION.SDK_INT >= 31) {
+                val dev = am.availableCommunicationDevices
+                    .firstOrNull { it.type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO }
+                if (dev != null) scoOn = am.setCommunicationDevice(dev)
+            } else if (am.isBluetoothScoAvailableOffCall) {
+                am.mode = AudioManager.MODE_IN_COMMUNICATION
+                am.startBluetoothSco(); am.isBluetoothScoOn = true; scoOn = true
+            }
+        } catch (_: SecurityException) { scoOn = false }
+    }
+
+    private fun releaseMic() {
+        if (!scoOn) return
+        val am = getSystemService(AudioManager::class.java)
+        if (Build.VERSION.SDK_INT >= 31) am.clearCommunicationDevice()
+        else { am.stopBluetoothSco(); am.isBluetoothScoOn = false; am.mode = AudioManager.MODE_NORMAL }
+        scoOn = false
     }
 
     private fun ask(text: String) = thread {

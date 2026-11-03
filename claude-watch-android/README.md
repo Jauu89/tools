@@ -10,6 +10,6 @@ Abre la carpeta en Android Studio (necesita Gradle wrapper/Android SDK) y ejecut
 Pega tu API key en la app. La clave se guarda en SharedPreferences del dispositivo (prototipo).
 
 ## Limitaciones
-- Si el reloj no tiene micrófono, la voz se capta con el del móvil.
+- Micrófono del reloj: se usa si el reloj está emparejado como auricular Bluetooth (llamadas); si no, el del móvil.
 - Los eventos de botón dependen de que la app esté como sesión multimedia activa; otra app de música puede robarla.
 - Las notificaciones al reloj dependen de que Mi Fitness/Xiaomi Wear tenga permitidas las notificaciones de esta app.
