@@ -16,6 +16,13 @@ const LEARN_HTML = `
 <tr><td>Riesgo (10%)</td><td>¿Cuánto puede doler?</td><td>Distancia a máximos, beta</td></tr>
 </table>
 
+<h2>Cómo elegir un fondo de inversión</h2>
+<div class="card"><b>1. Costes primero.</b> El TER (gastos corrientes) se descuenta cada año, haya ganancias o no. Indexados: 0,1-0,3%. Activos: 1-2%. Pocos gestores compensan esa diferencia a largo plazo.<br>
+<b>2. Compara dentro de su categoría.</b> Rentabilidad, Sharpe y volatilidad solo tienen sentido frente a fondos comparables.<br>
+<b>3. Consistencia, no un buen año.</b> Mira 3, 5 y 10 años y cómo se comportó en las caídas (caída máxima).<br>
+<b>4. Estrellas Morningstar:</b> útiles para descartar los de ≤ 2 estrellas, no para predecir. Miran el pasado.<br>
+<b>5. Solidez:</b> patrimonio suficiente (> 50-100 M), historial largo, gestor estable.<br>
+<b>6. Encaja con tu plan:</b> ¿cuánto riesgo aguantas? ¿qué papel juega en tu cartera? Un fondo global indexado puede ser la base; el resto, complementos.</div>
 <h2>Tipos de oportunidad (y cómo reconocerlas)</h2>
 <div class="card"><b>🏷️ Valor (value):</b> negocio sólido temporalmente barato. Señales: PER bajo vs su sector, buena caja libre, deuda controlada. Trampa: "barata porque va a peor" (negocio en declive).</div>
 <div class="card"><b>🚀 Crecimiento de calidad (GARP):</b> crece rápido a un precio razonable (PEG ≈ 1). Señales: ingresos +15%, márgenes altos y estables. Trampa: pagar de más por una historia perfecta.</div>

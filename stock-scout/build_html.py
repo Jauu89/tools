@@ -3,7 +3,7 @@
 import os, re
 d = os.path.join(os.path.dirname(__file__), "static")
 html = open(os.path.join(d, "index.html"), encoding="utf-8").read()
-for js in ("learn.js", "engine.js", "demo.js"):
+for js in ("learn.js", "engine.js", "demo.js", "funds.js", "live.js"):
     code = open(os.path.join(d, js), encoding="utf-8").read()
     html = html.replace(f'<script src="{js}"></script>', f"<script>\n{code}\n</script>")
 out = os.path.join(os.path.dirname(__file__), "stock-scout.html")

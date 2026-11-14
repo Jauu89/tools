@@ -4,7 +4,7 @@ const CATS={"valoracion": {"name": "Valoración", "w": 0.3}, "calidad": {"name":
 const FMT={pct:v=>(v*100).toFixed(1)+'%',x:v=>v.toFixed(1),int:v=>Math.round(v)+'%'};
 const scale=(v,bad,good)=>v==null?null:Math.max(0,Math.min(1,(v-bad)/(good-bad)))*100;
 function derive(r){const d={...r};
- d.fcf_yield=(r.market_cap&&r.fcf!=null)?r.fcf/r.market_cap:null;
+ d.fcf_yield=r.fcf_yield!=null?r.fcf_yield:((r.market_cap&&r.fcf!=null)?r.fcf/r.market_cap:null);
  d.drawdown=(r.price&&r.high_52w)?(r.high_52w-r.price)/r.high_52w:null;
  d.vs_sma200=(r.price&&r.sma200)?r.price/r.sma200-1:null;return d;}
 function analyzeRaw(raw){

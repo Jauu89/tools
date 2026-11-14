@@ -23,13 +23,18 @@ details{margin-top:8px}summary{cursor:pointer;color:var(--ac)}
 .f{padding:8px 0;border-top:1px solid var(--bd)}.lesson{font-size:13px;color:var(--mu);margin-top:2px}
 .warn{background:#fef3c7;color:#78350f;border-radius:8px;padding:10px;margin:10px 0;font-size:14px}
 @media(prefers-color-scheme:dark){.warn{background:#3a2e0c;color:#fde68a}}
-h2{font-size:17px;margin:18px 0 6px}.hide{display:none}
+h2{font-size:17px;margin:18px 0 6px}.hide{display:none}.flash{background:#fde68a;color:#000}
 table{border-collapse:collapse;width:100%}td,th{padding:6px 8px;border-bottom:1px solid var(--bd);text-align:left;font-size:14px}
 </style></head><body>
 <header><h1>📈 Stock Scout</h1><div class="mu">Encuentra candidatas, entiende el porqué y aprende a hacerlo tú.</div></header>
 <main>
 <div id="mode"></div>
-<nav><button data-t="scan" class="on">Oportunidades</button><button data-t="one">Analizar una acción</button><button data-t="learn">Aprende</button></nav>
+<details class="card"><summary>⚡ Datos en tiempo real (opcional)</summary>
+<p class="mu">Con una clave <b>gratuita</b> de <a href="https://finnhub.io/register" target="_blank" rel="noopener">finnhub.io</a> obtienes cotizaciones de acciones de EE. UU. en directo (WebSocket) y fundamentales actualizados. La clave se guarda solo en este dispositivo. Los fondos de inversión publican su precio una vez al día: no hay tiempo real para ellos.</p>
+<div class="row"><input id="fhk" type="password" placeholder="Tu clave API de Finnhub" autocomplete="off"><button class="btn p" onclick="saveKey()">Guardar</button></div>
+<label class="mu"><input type="checkbox" id="auto" style="width:auto" onchange="autoRefresh()"> Refrescar la lista automáticamente cada 30 s</label>
+<div id="keyMsg" class="mu"></div></details>
+<nav><button data-t="scan" class="on">Oportunidades</button><button data-t="one">Analizar una acción</button><button data-t="funds">Fondos</button><button data-t="learn">Aprende</button></nav>
 
 <section id="scan">
  <div class="row"><input id="list" placeholder="Tickers separados por comas (vacío = lista por defecto)">
@@ -51,6 +56,13 @@ table{border-collapse:collapse;width:100%}td,th{padding:6px 8px;border-bottom:1p
  <input id="m_hi" placeholder="Máximo 52 semanas" inputmode="decimal"><input id="m_beta" placeholder="Beta" inputmode="decimal">
  <input id="m_mc" placeholder="Capitalización" inputmode="decimal"><input id="m_fcf" placeholder="Caja libre (mismas unidades)" inputmode="decimal">
  </div><button class="btn p" onclick="manual()">Analizar mis datos</button><div id="manualOut"></div></details>
+</section>
+<section id="funds" class="hide">
+ <p class="mu">Sube la ficha en PDF de Morningstar (uno o varios) o escribe los datos. Se extraen las cifras y <b>tú las revisas</b> antes de puntuar. El PDF se lee en tu dispositivo; no se envía a ningún servidor.</p>
+ <div class="row"><input type="file" id="pdfs" accept="application/pdf" multiple onchange="fundPdfs([...this.files]);this.value=''"></div>
+ <div id="fundMsg" class="mu"></div>
+ <details open><summary>Datos del fondo</summary><div class="cats" id="fundForm"></div><button class="btn p" onclick="addFund()">Añadir al análisis</button></details>
+ <div id="fundOut"></div>
 </section>
 <section id="learn" class="hide"></section>
 <p class="mu">⚠️ Herramienta educativa de cribado. No es asesoramiento financiero. Invertir conlleva riesgo de pérdida; diversifica y no inviertas dinero que necesites a corto plazo.</p>
@@ -74,6 +86,13 @@ const LEARN_HTML = `
 <tr><td>Riesgo (10%)</td><td>¿Cuánto puede doler?</td><td>Distancia a máximos, beta</td></tr>
 </table>
 
+<h2>Cómo elegir un fondo de inversión</h2>
+<div class="card"><b>1. Costes primero.</b> El TER (gastos corrientes) se descuenta cada año, haya ganancias o no. Indexados: 0,1-0,3%. Activos: 1-2%. Pocos gestores compensan esa diferencia a largo plazo.<br>
+<b>2. Compara dentro de su categoría.</b> Rentabilidad, Sharpe y volatilidad solo tienen sentido frente a fondos comparables.<br>
+<b>3. Consistencia, no un buen año.</b> Mira 3, 5 y 10 años y cómo se comportó en las caídas (caída máxima).<br>
+<b>4. Estrellas Morningstar:</b> útiles para descartar los de ≤ 2 estrellas, no para predecir. Miran el pasado.<br>
+<b>5. Solidez:</b> patrimonio suficiente (> 50-100 M), historial largo, gestor estable.<br>
+<b>6. Encaja con tu plan:</b> ¿cuánto riesgo aguantas? ¿qué papel juega en tu cartera? Un fondo global indexado puede ser la base; el resto, complementos.</div>
 <h2>Tipos de oportunidad (y cómo reconocerlas)</h2>
 <div class="card"><b>🏷️ Valor (value):</b> negocio sólido temporalmente barato. Señales: PER bajo vs su sector, buena caja libre, deuda controlada. Trampa: "barata porque va a peor" (negocio en declive).</div>
 <div class="card"><b>🚀 Crecimiento de calidad (GARP):</b> crece rápido a un precio razonable (PEG ≈ 1). Señales: ingresos +15%, márgenes altos y estables. Trampa: pagar de más por una historia perfecta.</div>
@@ -98,7 +117,7 @@ const CATS={"valoracion": {"name": "Valoración", "w": 0.3}, "calidad": {"name":
 const FMT={pct:v=>(v*100).toFixed(1)+'%',x:v=>v.toFixed(1),int:v=>Math.round(v)+'%'};
 const scale=(v,bad,good)=>v==null?null:Math.max(0,Math.min(1,(v-bad)/(good-bad)))*100;
 function derive(r){const d={...r};
- d.fcf_yield=(r.market_cap&&r.fcf!=null)?r.fcf/r.market_cap:null;
+ d.fcf_yield=r.fcf_yield!=null?r.fcf_yield:((r.market_cap&&r.fcf!=null)?r.fcf/r.market_cap:null);
  d.drawdown=(r.price&&r.high_52w)?(r.high_52w-r.price)/r.high_52w:null;
  d.vs_sma200=(r.price&&r.sma200)?r.price/r.sma200-1:null;return d;}
 function analyzeRaw(raw){
@@ -134,23 +153,196 @@ const UNIVERSE=["AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "BRK-B", "JPM",
 
 </script>
 <script>
+// ===== Motor de FONDOS + lector de PDF de Morningstar =====
+const FUND_METRICS=[
+ ["ter","Gastos corrientes (TER)","costes",0.02,0.002,v=>(v*100).toFixed(2)+'%',
+  ["Muy caro: cada año se come una parte grande de tu rentabilidad.","Coste normal para un fondo activo.","Barato: casi toda la rentabilidad llega a tu bolsillo."],
+  "El coste es lo único que controlas. 1% extra al año durante 30 años puede restar ~25% del capital final. Los indexados cuestan 0,1-0,3%."],
+ ["ret3_rel","Rentab. 3 años vs categoría","rentabilidad",-0.03,0.03,v=>(v>=0?'+':'')+(v*100).toFixed(1)+' pts',
+  ["Pierde frente a la media de fondos comparables.","En línea con su categoría.","Supera a su categoría de forma clara."],
+  "Compara siempre contra su categoría, no en absoluto: un fondo de renta fija y uno de bolsa no son comparables."],
+ ["ret3_abs","Rentabilidad anualizada 3 años","rentabilidad",0,0.12,v=>(v*100).toFixed(1)+'%',
+  ["Rentabilidad nula o negativa en 3 años.","Rentabilidad moderada.","Rentabilidad alta (ojo: puede deberse a un ciclo favorable)."],
+  "Tres años es poco: puede ser suerte de ciclo. Mira también 5 y 10 años."],
+ ["ret5_rel","Rentab. 5 años vs categoría","rentabilidad",-0.03,0.03,v=>(v>=0?'+':'')+(v*100).toFixed(1)+' pts',
+  ["A 5 años va por detrás de su categoría.","A 5 años, en línea con su categoría.","A 5 años supera a su categoría: consistencia."],
+  "La consistencia a 5+ años pesa más que un buen último año. Pocos fondos activos baten a su índice de forma sostenida."],
+ ["ret5_abs","Rentabilidad anualizada 5 años","rentabilidad",0,0.10,v=>(v*100).toFixed(1)+'%',
+  ["Rentabilidad nula o negativa a 5 años.","Rentabilidad moderada a 5 años.","Rentabilidad alta a 5 años."],
+  "Las rentabilidades pasadas no garantizan las futuras; úsalas para descartar, no para elegir."],
+ ["sharpe","Ratio de Sharpe","riesgo",0,1.2,v=>v.toFixed(2),
+  ["Poca rentabilidad por unidad de riesgo asumido.","Relación rentabilidad/riesgo aceptable.","Muy buena rentabilidad por cada unidad de riesgo."],
+  "Sharpe = (rentabilidad − tipo sin riesgo) / volatilidad. > 1 es bueno. Compáralo solo dentro de la misma categoría."],
+ ["vol","Volatilidad (desv. estándar)","riesgo",0.25,0.08,v=>(v*100).toFixed(1)+'%',
+  ["Volatilidad alta: el fondo oscila mucho.","Volatilidad media.","Volatilidad baja."],
+  "Renta variable global ronda 14-17%, renta fija 3-6%. Pregúntate si podrías aguantar ver caer el fondo esa cifra sin vender."],
+ ["max_dd","Caída máxima histórica","riesgo",0.40,0.10,v=>(v*100).toFixed(1)+'%',
+  ["Ha llegado a perder mucho: prepárate para ese escenario.","Caídas máximas moderadas.","Caídas máximas contenidas."],
+  "La caída máxima te dice lo peor que ha pasado. Si perder ese % te haría vender, el fondo no es para ti."],
+ ["alpha","Alfa","riesgo",-3,3,v=>v.toFixed(2),
+  ["El gestor resta valor frente a su índice.","El gestor aporta poco sobre el índice.","El gestor aporta valor real sobre el índice."],
+  "Alfa es la rentabilidad por encima de la que explica el riesgo de mercado. Un alfa persistente es muy raro."],
+ ["stars","Rating Morningstar (estrellas)","calidad",2,5,v=>'★'.repeat(Math.round(v))+' ('+v+')',
+  ["Rating bajo: históricamente flojo frente a su categoría.","Rating medio.","Rating alto."],
+  "Las estrellas miran el pasado (rentabilidad ajustada por riesgo y costes). Sirven para filtrar, no para predecir."],
+ ["size","Patrimonio (M)","calidad",20,300,v=>Math.round(v)+' M',
+  ["Muy pequeño: riesgo de cierre o fusión.","Tamaño suficiente.","Tamaño sólido."],
+  "Los fondos muy pequeños pueden cerrar o fusionarse. Los gigantes pueden perder agilidad; busca un punto medio."],
+ ["age","Antigüedad (años)","calidad",2,8,v=>v.toFixed(0)+' años',
+  ["Muy joven: historial insuficiente.","Historial razonable.","Largo historial que incluye distintos ciclos."],
+  "Un historial que atraviese una crisis (2008, 2020, 2022) enseña mucho más que uno de años buenos."]
+];
+const FUND_CATS={costes:["Costes",0.25],rentabilidad:["Rentabilidad y consistencia",0.30],riesgo:["Riesgo ajustado",0.30],calidad:["Calidad y solidez",0.15]};
+function analyzeFund(raw){
+ const d={...raw};
+ d.ret3_rel=(raw.ret3!=null&&raw.cat_ret3!=null)?raw.ret3-raw.cat_ret3:null;
+ d.ret5_rel=(raw.ret5!=null&&raw.cat_ret5!=null)?raw.ret5-raw.cat_ret5:null;
+ d.ret3_abs=d.ret3_rel==null?raw.ret3??null:null; d.ret5_abs=d.ret5_rel==null?raw.ret5??null:null;
+ const findings=[],cs={};
+ for(const [key,label,cat,bad,good,fmt,texts,lesson] of FUND_METRICS){
+  const v=d[key]; if(v==null||isNaN(v))continue;
+  const s=Math.max(0,Math.min(1,(v-bad)/(good-bad)))*100,lv=s<35?0:(s<65?1:2);
+  findings.push({key,label,category:cat,value:fmt(v),score:Math.round(s),level:['bad','mid','good'][lv],text:texts[lv],lesson});
+  (cs[cat]=cs[cat]||[]).push(s);}
+ const cats=[];let tot=0,ws=0;
+ for(const [k,[name,w]] of Object.entries(FUND_CATS)){const a=cs[k];if(a){const avg=a.reduce((x,y)=>x+y)/a.length;cats.push({key:k,name,score:Math.round(avg),weight:w});tot+=avg*w;ws+=w;}}
+ const score=ws?Math.round(tot/ws):null,flags=[];
+ if(d.ter>0.015)flags.push('Costes elevados (TER > 1,5%).');
+ if(d.size!=null&&d.size<20)flags.push('Patrimonio muy pequeño (< 20 M): riesgo de cierre.');
+ if(d.age!=null&&d.age<3)flags.push('Menos de 3 años de historial.');
+ if(raw.ret3!=null&&raw.ret3<0)flags.push('Rentabilidad negativa a 3 años.');
+ if(d.stars!=null&&d.stars<=2)flags.push('Rating Morningstar bajo (≤ 2 estrellas).');
+ if(findings.length<4)flags.push('Pocos datos: la nota es poco fiable.');
+ const verdict=score==null?'Sin datos':(score>=68&&!flags.length)?'Interesante':score>=55?'A vigilar':'Poco atractivo';
+ const pos=[...findings].sort((a,b)=>b.score-a.score).filter(f=>f.level==='good').slice(0,3);
+ const neg=[...findings].sort((a,b)=>a.score-b.score).filter(f=>f.level==='bad').slice(0,3);
+ let summary='No hay datos suficientes.';
+ if(score!=null){summary=`${raw.name} obtiene ${score}/100 (${verdict}). `;
+  if(pos.length)summary+='Lo mejor: '+pos.map(f=>f.label.toLowerCase()).join('; ')+'. ';
+  if(neg.length)summary+='Lo peor: '+neg.map(f=>f.label.toLowerCase()).join('; ')+'. ';
+  summary+='Cribado orientativo: compara con otros fondos de su categoría y revisa la política de inversión.';}
+ return {ticker:raw.isin||'FONDO',name:raw.name,sector:raw.category||'Fondo',price:null,currency:'',score,verdict,categories:cats,findings,flags,summary};}
+
+// ---- Lector de texto de fichas Morningstar (ES/EN, mejor esfuerzo) ----
+function _n(s){if(s==null)return null;s=String(s).trim();
+ if(s.includes(',')&&s.includes('.'))s=s.replace(/\./g,'').replace(',','.');else s=s.replace(',','.');
+ const v=parseFloat(s);return isNaN(v)?null:v;}
+function parseMorningstar(text){
+ const t=text.replace(/\s+/g,' '),out={},f=(re)=>{const m=t.match(re);return m?m:null;};
+ let m;
+ if(m=f(/\b([A-Z]{2}[A-Z0-9]{9}[0-9])\b/))out.isin=m[1];
+ if(m=f(/(?:Rating Morningstar|Morningstar Rating|Calificaci[oó]n Morningstar|Rating General)[^\d★]{0,40}([1-5])(?!\d)/i))out.stars=+m[1];
+ else if(m=f(/Morningstar[^★]{0,60}(★{1,5})/i))out.stars=m[1].length;
+ if(m=f(/(?:Gastos corrientes|Ongoing Charge|Gastos Corrientes|Comisi[oó]n corriente|\bTER\b)[^\d]{0,40}(\d+(?:[.,]\d+)?)\s*%/i))out.ter=_n(m[1])/100;
+ if(m=f(/Sharpe(?:\s*\d{1,2}\s*(?:a[ñn]os|years?|yrs?|y)\b)?[^\d-]{0,40}(-?\d+(?:[.,]\d+)?)/i))out.sharpe=_n(m[1]);
+ if(m=f(/(?:Desviaci[oó]n est[aá]ndar|Standard Deviation|Std Dev)(?:\s*\d{1,2}\s*(?:a[ñn]os|years?|yrs?|y)\b)?[^\d-]{0,40}(\d+(?:[.,]\d+)?)/i))out.vol=_n(m[1])/100;
+ if(m=f(/(?:\bAlfa\b|\bAlpha\b)(?:\s*\d{1,2}\s*(?:a[ñn]os|years?|yrs?|y)\b)?[^\d-]{0,40}(-?\d+(?:[.,]\d+)?)/i))out.alpha=_n(m[1]);
+ if(m=f(/(?:Ca[ií]da m[aá]xima|Max(?:imum)? Drawdown)(?:\s*\d{1,2}\s*(?:a[ñn]os|years?|yrs?|y)\b)?[^\d-]{0,30}(-?\d+(?:[.,]\d+)?)/i))out.max_dd=Math.abs(_n(m[1]))/100;
+ if(m=f(/(?:3 a[ñn]os|3 Year|3Y|3 Yr)[^\d-]{0,20}(-?\d+(?:[.,]\d+)?)/i))out.ret3=_n(m[1])/100;
+ if(m=f(/(?:5 a[ñn]os|5 Year|5Y|5 Yr)[^\d-]{0,20}(-?\d+(?:[.,]\d+)?)/i))out.ret5=_n(m[1])/100;
+ if(m=f(/(?:Patrimonio(?: del fondo)?|Tama[ñn]o del fondo|Fund Size|Net Assets)[^\d]{0,50}(\d[\d.,]*)\s*(mil millones|bn|billion|millones|mill|mln|m\b)?/i)){
+  let v=_n(m[1]);if(v!=null){if(/mil millones|bn|billion/i.test(m[2]||''))v*=1000;out.size=v;}}
+ if(m=f(/(?:Fecha de lanzamiento|Fecha de inicio|Inception Date|Fecha de creaci[oó]n)[^\d]{0,30}(?:\d{1,2}[\/.\-\s]+(?:\d{1,2}|[A-Za-zñ]+)[\/.\-\s]+)?(\d{4})/i))out.age=new Date().getFullYear()-(+m[1]);
+ if(m=f(/(?:Categor[ií]a Morningstar|Morningstar Category)[: ]+([^\d★]{3,60}?)(?= {2}| Rating| Gastos| Ongoing|$)/i))out.category=m[1].trim();
+ return out;}
+async function pdfText(file){
+ if(!window.pdfjsLib){await new Promise((ok,ko)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';s.onload=ok;s.onerror=()=>ko(new Error('No se pudo cargar el lector de PDF (hace falta conexión a internet)'));document.head.appendChild(s);});
+  pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';}
+ const pdf=await pdfjsLib.getDocument({data:await file.arrayBuffer()}).promise;let txt='';
+ for(let i=1;i<=Math.min(pdf.numPages,8);i++){const p=await pdf.getPage(i);txt+=(await p.getTextContent()).items.map(x=>x.str).join(' ')+' ';}
+ return txt;}
+
+// ---- UI de fondos ----
+const FFIELDS=[["name","Nombre del fondo",0],["isin","ISIN",0],["category","Categoría",0],["ter","Gastos corrientes %",1],["stars","Estrellas Morningstar (1-5)",0],
+ ["ret3","Rentab. anualizada 3 años %",1],["cat_ret3","Media categoría 3 años %",1],["ret5","Rentab. anualizada 5 años %",1],["cat_ret5","Media categoría 5 años %",1],
+ ["sharpe","Ratio de Sharpe",0],["vol","Volatilidad (desv. estándar) %",1],["max_dd","Caída máxima %",1],["alpha","Alfa",0],["size","Patrimonio (millones)",0],["age","Antigüedad (años)",0]];
+let FUNDS=[];try{FUNDS=JSON.parse(localStorage.getItem('funds')||'[]');}catch(e){}
+function fundFormInit(){
+ const box=document.getElementById('fundForm');
+ box.innerHTML=FFIELDS.map(([k,l])=>`<label class="mu" style="display:block">${l}<input id="f_${k}" ${['name','isin','category'].includes(k)?'':'inputmode="decimal"'} style="display:block;max-width:none"></label>`).join('');
+ renderFunds();}
+function fundFill(o,fname){
+ for(const [k,,pct] of FFIELDS){const el=document.getElementById('f_'+k);if(!el)continue;
+  let v=o[k];if(k==='name'&&!v)v=(fname||'').replace(/\.pdf$/i,'');
+  if(v!=null&&pct&&typeof v==='number')v=+(v*100).toFixed(3);
+  el.value=v==null?'':v;el.style.outline=(o[k]!=null)?'2px solid var(--g)':'';}}
+function fundRead(){const o={};
+ for(const [k,,pct] of FFIELDS){const v=document.getElementById('f_'+k).value.trim();
+  if(['name','isin','category'].includes(k))o[k]=v;else if(v!==''){let x=parseFloat(v.replace(',','.'));if(!isNaN(x))o[k]=pct?x/100:x;}}
+ if(!o.name)o.name=o.isin||'Fondo sin nombre';return o;}
+async function fundPdfs(files){
+ const st=document.getElementById('fundMsg');
+ for(const file of files){st.textContent='Leyendo '+file.name+'…';
+  try{const o=parseMorningstar(await pdfText(file));fundFill(o,file.name);
+   const n=Object.keys(o).length;st.innerHTML=`<b>${esc(file.name)}</b>: se han detectado ${n} campos (resaltados en verde). <b>Revísalos y completa los que falten</b>, luego pulsa «Añadir al análisis».`;
+   if(files.length>1){addFund();}
+  }catch(e){st.textContent='Error: '+e.message+'. Puedes introducir los datos a mano.';}}}
+function addFund(){FUNDS.push(fundRead());FUNDS=FUNDS.slice(-30);try{localStorage.setItem('funds',JSON.stringify(FUNDS));}catch(e){}renderFunds();}
+function delFund(i){FUNDS.splice(i,1);try{localStorage.setItem('funds',JSON.stringify(FUNDS));}catch(e){}renderFunds();}
+function renderFunds(){
+ const out=document.getElementById('fundOut');if(!FUNDS.length){out.innerHTML='<p class="mu">Aún no has añadido fondos. Sube uno o varios PDF de Morningstar, o rellena el formulario.</p>';return;}
+ const rs=FUNDS.map((f,i)=>({r:analyzeFund(f),i})).sort((a,b)=>(b.r.score||0)-(a.r.score||0));
+ out.innerHTML=`<table><tr><th>#</th><th>Fondo</th><th>Nota</th><th>Veredicto</th><th></th></tr>${rs.map((x,n)=>`<tr><td>${n+1}</td><td>${esc(x.r.name)}</td><td class="${cls(x.r.score)}"><b>${x.r.score??'–'}</b></td><td>${esc(x.r.verdict)}</td><td><a href="#" onclick="delFund(${x.i});return false">quitar</a></td></tr>`).join('')}</table>`+rs.map(x=>card(x.r,false)).join('');}
+
+</script>
+<script>
+// ===== Datos en tiempo real con Finnhub (clave gratuita, funciona en el navegador/Android) =====
+const FH='https://finnhub.io/api/v1';
+const LS={get(k){try{return localStorage.getItem(k);}catch(e){return null;}},set(k,v){try{localStorage.setItem(k,v);}catch(e){}}};
+const fhKey=()=>(LS.get('fh_key')||'').trim();
+async function fh(path,key){const r=await fetch(FH+path+(path.includes('?')?'&':'?')+'token='+encodeURIComponent(key));
+ if(r.status===429)throw new Error('límite de consultas de Finnhub (espera un minuto)');
+ if(r.status===401||r.status===403)throw new Error('clave de Finnhub no válida o sin acceso a este valor');
+ if(!r.ok)throw new Error('error '+r.status);return r.json();}
+const pct=v=>v==null?null:v/100;
+async function fundamentals(t,key){ // fundamentales: se cachean 12 h para ahorrar consultas
+ const ck='fh_f_'+t;try{const c=JSON.parse(LS.get(ck)||'null');if(c&&Date.now()-c.ts<432e5)return c.d;}catch(e){}
+ const [m,p]=await Promise.all([fh('/stock/metric?symbol='+t+'&metric=all',key),fh('/stock/profile2?symbol='+t,key)]);
+ const x=m.metric||{};
+ const d={name:p.name||t,sector:p.finnhubIndustry,currency:p.currency||'USD',
+  pe:x.peTTM??x.peNormalizedAnnual??null,roe:pct(x.roeTTM),margin:pct(x.netProfitMarginTTM),
+  debt_equity:x['totalDebt/totalEquityQuarterly']!=null?x['totalDebt/totalEquityQuarterly']*100:null,
+  rev_growth:pct(x.revenueGrowthTTMYoy),earn_growth:pct(x.epsGrowthTTMYoy),ret_6m:pct(x['26WeekPriceReturnDaily']),
+  high_52w:x['52WeekHigh']??null,beta:x.beta??null,fcf_yield:x.pfcfShareTTM>0?1/x.pfcfShareTTM:null};
+ LS.set(ck,JSON.stringify({ts:Date.now(),d}));return d;}
+async function liveRow(t,key){
+ const q=await fh('/quote?symbol='+t,key);if(!q||!q.c)throw new Error('ticker no encontrado en Finnhub (la versión gratuita solo cubre EE. UU.)');
+ const f=await fundamentals(t,key);
+ return {...f,ticker:t,price:q.c,day_change:q.dp,source:'finnhub',updated:Date.now()};}
+async function runFinnhub(tickers){
+ const key=fhKey(),list=(tickers.length?tickers:UNIVERSE).slice(0,25),results=[],errors=[];
+ for(let i=0;i<list.length;i+=5){ // lotes de 5 para respetar el límite (60/min)
+  await Promise.all(list.slice(i,i+5).map(async t=>{try{results.push(analyzeRaw(await liveRow(t,key)));}catch(e){errors.push({ticker:t,error:e.message});}}));}
+ results.sort((a,b)=>(b.score||0)-(a.score||0));return {mode:'live-finnhub',results,errors};}
+// WebSocket: precio en directo de las candidatas (solo EE. UU.)
+let _ws=null;
+function liveSocket(tickers){
+ try{if(_ws)_ws.close();const key=fhKey();if(!key||!tickers.length)return;
+  _ws=new WebSocket('wss://ws.finnhub.io?token='+encodeURIComponent(key));
+  _ws.onopen=()=>tickers.slice(0,15).forEach(s=>_ws.send(JSON.stringify({type:'subscribe',symbol:s})));
+  _ws.onmessage=e=>{const m=JSON.parse(e.data);if(m.type!=='trade')return;
+   for(const tr of m.data){const el=document.getElementById('px-'+tr.s);if(el){el.textContent=tr.p.toFixed(2);el.classList.add('flash');setTimeout(()=>el.classList.remove('flash'),400);}}};
+ }catch(e){}}
+
+</script>
+<script>
 const $=s=>document.querySelector(s);
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
  document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('on',x===b));
- ['scan','one','learn'].forEach(id=>$('#'+id).classList.toggle('hide',id!==b.dataset.t));});
+ ['scan','one','funds','learn'].forEach(id=>$('#'+id).classList.toggle('hide',id!==b.dataset.t));});
 const cls=s=>s>=65?'good':s>=40?'mid':'bad';
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function card(r,open){
  const vc=r.verdict==='Interesante'?'good':r.verdict==='A vigilar'?'mid':'bad';
  return `<div class="card"><div class="row"><div class="score ${cls(r.score)}">${r.score??'–'}</div>
- <div style="flex:1"><b>${esc(r.ticker)}</b> · ${esc(r.name)} <span class="mu">${esc(r.sector||'')} ${r.price?'· '+r.price.toFixed(2)+' '+esc(r.currency):''}</span>
+ <div style="flex:1"><b>${esc(r.ticker)}</b> · ${esc(r.name)} <span class="mu">${esc(r.sector||'')} ${r.price?'· <span id="px-'+esc(r.ticker)+'">'+r.price.toFixed(2)+'</span> '+esc(r.currency):''}</span>
  <div><span class="tag ${vc}">${esc(r.verdict)}</span></div></div></div>
  <p>${esc(r.summary)}</p>
  ${r.flags.map(f=>`<div class="bad">🚩 ${esc(f)}</div>`).join('')}
  <div class="cats">${r.categories.map(c=>`<div><div class="mu">${c.name} (${Math.round(c.weight*100)}%)</div><div class="row"><div class="bar"><i style="width:${c.score}%"></i></div><b>${c.score}</b></div></div>`).join('')}</div>
  <details ${open?'open':''}><summary>¿Por qué esta nota? Detalle y lección de cada métrica</summary>
  ${r.findings.map(f=>`<div class="f"><b class="${f.level}">${esc(f.label)}: ${esc(f.value)}</b> — ${esc(f.text)}<div class="lesson">📚 ${esc(f.lesson)}</div></div>`).join('')}</details></div>`;}
-function banner(mode){ $('#mode').innerHTML = mode==='demo'?'<div class="warn"><b>Modo demo:</b> cifras aproximadas de ejemplo, NO actuales. Para datos reales ejecuta <code>pip install yfinance</code> y reinicia el servidor.</div>':''; }
+function banner(mode){ $('#mode').innerHTML = mode==='live-finnhub'?'<div class="warn" style="background:#dcfce7;color:#14532d">🟢 <b>Datos en directo</b> (Finnhub). Última actualización: '+new Date().toLocaleTimeString()+'</div>':mode==='demo'?'<div class="warn"><b>Modo demo:</b> cifras aproximadas de ejemplo, NO actuales. Para datos reales ejecuta <code>pip install yfinance</code> y reinicia el servidor.</div>':''; }
 async function livePrices(row){ // experimental: intenta refrescar precio/tendencia desde Yahoo (puede fallar por CORS)
  try{const r=await fetch('https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(row.ticker)+'?range=1y&interval=1d');
   const c=(await r.json()).chart.result[0].indicators.quote[0].close.filter(x=>x!=null);
@@ -162,6 +354,8 @@ async function runLocal(t){
  const results=(await Promise.all(list.filter(k=>DEMO[k]).map(async k=>analyzeRaw(await livePrices({...DEMO[k],ticker:k,source:'demo'}))))); 
  results.sort((a,b)=>(b.score||0)-(a.score||0));return {mode:'demo',results,errors};}
 async function run(t){
+ const tk=t.split(',').map(x=>x.trim().toUpperCase()).filter(Boolean);
+ if(fhKey()){try{const d=await runFinnhub(tk);if(d.results.length)return d;}catch(e){}}
  if(location.protocol==='file:') return runLocal(t);
  try{const r=await fetch('/api/analyze?tickers='+encodeURIComponent(t));if(!r.ok)throw 0;return await r.json();}
  catch(e){return runLocal(t);}}
@@ -172,12 +366,13 @@ function manual(){
   rev_growth:g('rg')/100,earn_growth:g('eg')/100,ret_6m:g('r6')/100,sma200:g('sma'),high_52w:g('hi'),beta:g('beta'),market_cap:g('mc'),fcf:g('fcf')};
  for(const k of ['roe','margin','rev_growth','earn_growth','ret_6m'])if(isNaN(raw[k]))raw[k]=null;
  const r=analyzeRaw(raw);$('#manualOut').innerHTML=card(r,true);}
-async function scan(){
- $('#scanOut').innerHTML='<p class="mu">Analizando…</p>';
+async function scan(quiet){
+ if(!quiet)$('#scanOut').innerHTML='<p class="mu">Analizando…</p>';
  const d=await run($('#list').value); banner(d.mode);
  $('#scanOut').innerHTML=`<table><tr><th>#</th><th>Ticker</th><th>Nota</th><th>Veredicto</th></tr>${d.results.map((r,i)=>`<tr><td>${i+1}</td><td>${esc(r.ticker)}</td><td class="${cls(r.score)}"><b>${r.score}</b></td><td>${esc(r.verdict)}</td></tr>`).join('')}</table>`
   + d.results.slice(0,10).map(r=>card(r,false)).join('')
   + (d.errors.length?`<p class="mu">Sin datos: ${d.errors.map(e=>esc(e.ticker+' ('+e.error+')')).join('; ')}</p>`:'');
+ if(d.mode==='live-finnhub')liveSocket(d.results.slice(0,10).map(r=>r.ticker));
 }
 async function one(){
  const t=$('#tk').value.trim(); if(!t) return;
@@ -185,6 +380,9 @@ async function one(){
  $('#oneOut').innerHTML=d.results.length?card(d.results[0],true):`<p class="bad">${esc(d.errors[0]?.error||'Sin datos')}</p>`;
 }
 $('#learn').innerHTML=LEARN_HTML;
+fundFormInit();$('#fhk').value=fhKey();
+function saveKey(){LS.set('fh_key',$('#fhk').value.trim());$('#keyMsg').textContent=fhKey()?'Clave guardada. Pulsa «Buscar» para usar datos en directo.':'Clave eliminada.';}
+let _t=null;function autoRefresh(){clearInterval(_t);if($('#auto').checked)_t=setInterval(()=>scan(true),30000);}
 document.querySelectorAll('[id^=m_]').forEach(i=>{const l=document.createElement('label');l.className='mu';l.style.display='block';l.textContent=i.placeholder;i.parentNode.insertBefore(l,i);l.appendChild(i);i.style.display='block';i.style.maxWidth='none';});
 fetch('/api/status').then(r=>r.json()).then(s=>banner(s.mode)).catch(()=>banner('demo'));
 </script></body></html>

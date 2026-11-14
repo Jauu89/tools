@@ -21,14 +21,30 @@ def _g(info, *keys):
             return v
     return None
 
+import time
+_CACHE = {}   # ticker -> (timestamp, info) ; los fundamentales cambian poco: 1 h
+def _info(t, ticker):
+    c = _CACHE.get(ticker)
+    if c and time.time() - c[0] < 3600:
+        return c[1]
+    info = t.info or {}
+    _CACHE[ticker] = (time.time(), info)
+    return info
+
 def fetch_live(ticker):
     t = yf.Ticker(ticker)
-    info = t.info or {}
+    info = _info(t, ticker)
     hist = t.history(period="1y", auto_adjust=True)
     if hist.empty:
         raise ValueError("sin historial de precios")
     close = hist["Close"]
     price = float(close.iloc[-1])
+    try:  # precio más reciente (puede venir con ~15 min de retraso según la bolsa)
+        fast = t.fast_info.get("last_price")
+        if fast and fast == fast:
+            price = float(fast)
+    except Exception:
+        pass
     ret_6m = price / float(close.iloc[max(0, len(close) - 126)]) - 1
     sma200 = float(close.tail(200).mean())
     peg = _g(info, "trailingPegRatio", "pegRatio")
