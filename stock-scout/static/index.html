@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Stock Scout</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--tx:#1b2230;--mu:#667085;--bd:#e3e6ec;--ac:#2457d6;--g:#15803d;--y:#b45309;--r:#b91c1c}
+@media(prefers-color-scheme:dark){:root{--bg:#0f131a;--card:#171c26;--tx:#e8ecf3;--mu:#9aa4b5;--bd:#283042;--ac:#6c9bff;--g:#4ade80;--y:#fbbf24;--r:#f87171}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,sans-serif}
+header{padding:16px;border-bottom:1px solid var(--bd);background:var(--card)}
+h1{margin:0;font-size:20px}main{max-width:980px;margin:0 auto;padding:16px}
+nav{display:flex;gap:6px;margin:12px 0;flex-wrap:wrap}
+nav button,.btn{border:1px solid var(--bd);background:var(--card);color:var(--tx);padding:8px 14px;border-radius:8px;cursor:pointer;font:inherit}
+nav button.on,.btn.p{background:var(--ac);color:#fff;border-color:var(--ac)}
+input{padding:8px 10px;border:1px solid var(--bd);border-radius:8px;background:var(--card);color:var(--tx);font:inherit;width:100%;max-width:420px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px;margin:10px 0}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.mu{color:var(--mu);font-size:13px}
+.score{font-size:26px;font-weight:700;min-width:56px;text-align:center}
+.tag{padding:2px 9px;border-radius:99px;font-size:12px;font-weight:600;border:1px solid currentColor}
+.good{color:var(--g)}.mid{color:var(--y)}.bad{color:var(--r)}
+.bar{height:8px;background:var(--bd);border-radius:4px;overflow:hidden;flex:1;min-width:80px}.bar i{display:block;height:100%;background:var(--ac)}
+.cats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px;margin:8px 0}
+details{margin-top:8px}summary{cursor:pointer;color:var(--ac)}
+.f{padding:8px 0;border-top:1px solid var(--bd)}.lesson{font-size:13px;color:var(--mu);margin-top:2px}
+.warn{background:#fef3c7;color:#78350f;border-radius:8px;padding:10px;margin:10px 0;font-size:14px}
+@media(prefers-color-scheme:dark){.warn{background:#3a2e0c;color:#fde68a}}
+h2{font-size:17px;margin:18px 0 6px}.hide{display:none}
+table{border-collapse:collapse;width:100%}td,th{padding:6px 8px;border-bottom:1px solid var(--bd);text-align:left;font-size:14px}
+</style></head><body>
+<header><h1>📈 Stock Scout</h1><div class="mu">Encuentra candidatas, entiende el porqué y aprende a hacerlo tú.</div></header>
+<main>
+<div id="mode"></div>
+<nav><button data-t="scan" class="on">Oportunidades</button><button data-t="one">Analizar una acción</button><button data-t="learn">Aprende</button></nav>
+
+<section id="scan">
+ <div class="row"><input id="list" placeholder="Tickers separados por comas (vacío = lista por defecto)">
+ <button class="btn p" onclick="scan()">Buscar</button></div>
+ <div id="scanOut"></div>
+</section>
+<section id="one" class="hide">
+ <div class="row"><input id="tk" placeholder="Ticker, p. ej. KO"><button class="btn p" onclick="one()">Analizar</button></div>
+ <div id="oneOut"></div>
+</section>
+<section id="learn" class="hide"></section>
+<p class="mu">⚠️ Herramienta educativa de cribado. No es asesoramiento financiero. Invertir conlleva riesgo de pérdida; diversifica y no inviertas dinero que necesites a corto plazo.</p>
+</main>
+<script src="learn.js"></script>
+<script>
+const $=s=>document.querySelector(s);
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
+ document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('on',x===b));
+ ['scan','one','learn'].forEach(id=>$('#'+id).classList.toggle('hide',id!==b.dataset.t));});
+const cls=s=>s>=65?'good':s>=40?'mid':'bad';
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function card(r,open){
+ const vc=r.verdict==='Interesante'?'good':r.verdict==='A vigilar'?'mid':'bad';
+ return `<div class="card"><div class="row"><div class="score ${cls(r.score)}">${r.score??'–'}</div>
+ <div style="flex:1"><b>${esc(r.ticker)}</b> · ${esc(r.name)} <span class="mu">${esc(r.sector||'')} ${r.price?'· '+r.price.toFixed(2)+' '+esc(r.currency):''}</span>
+ <div><span class="tag ${vc}">${esc(r.verdict)}</span></div></div></div>
+ <p>${esc(r.summary)}</p>
+ ${r.flags.map(f=>`<div class="bad">🚩 ${esc(f)}</div>`).join('')}
+ <div class="cats">${r.categories.map(c=>`<div><div class="mu">${c.name} (${Math.round(c.weight*100)}%)</div><div class="row"><div class="bar"><i style="width:${c.score}%"></i></div><b>${c.score}</b></div></div>`).join('')}</div>
+ <details ${open?'open':''}><summary>¿Por qué esta nota? Detalle y lección de cada métrica</summary>
+ ${r.findings.map(f=>`<div class="f"><b class="${f.level}">${esc(f.label)}: ${esc(f.value)}</b> — ${esc(f.text)}<div class="lesson">📚 ${esc(f.lesson)}</div></div>`).join('')}</details></div>`;}
+function banner(mode){ $('#mode').innerHTML = mode==='demo'?'<div class="warn"><b>Modo demo:</b> cifras aproximadas de ejemplo, NO actuales. Para datos reales ejecuta <code>pip install yfinance</code> y reinicia el servidor.</div>':''; }
+async function run(t){ const r=await fetch('/api/analyze?tickers='+encodeURIComponent(t)); return r.json(); }
+async function scan(){
+ $('#scanOut').innerHTML='<p class="mu">Analizando…</p>';
+ const d=await run($('#list').value); banner(d.mode);
+ $('#scanOut').innerHTML=`<table><tr><th>#</th><th>Ticker</th><th>Nota</th><th>Veredicto</th></tr>${d.results.map((r,i)=>`<tr><td>${i+1}</td><td>${esc(r.ticker)}</td><td class="${cls(r.score)}"><b>${r.score}</b></td><td>${esc(r.verdict)}</td></tr>`).join('')}</table>`
+  + d.results.slice(0,10).map(r=>card(r,false)).join('')
+  + (d.errors.length?`<p class="mu">Sin datos: ${d.errors.map(e=>esc(e.ticker+' ('+e.error+')')).join('; ')}</p>`:'');
+}
+async function one(){
+ const t=$('#tk').value.trim(); if(!t) return;
+ const d=await run(t); banner(d.mode);
+ $('#oneOut').innerHTML=d.results.length?card(d.results[0],true):`<p class="bad">${esc(d.errors[0]?.error||'Sin datos')}</p>`;
+}
+$('#learn').innerHTML=LEARN_HTML;
+fetch('/api/status').then(r=>r.json()).then(s=>banner(s.mode));
+</script></body></html>
