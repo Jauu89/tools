@@ -2,7 +2,8 @@
 import json, os
 from concurrent.futures import ThreadPoolExecutor
 
-HERE = os.path.dirname(__file__)
+import sys
+HERE = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
 UNIVERSE = ["AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "BRK-B", "JPM", "V", "JNJ",
             "PG", "KO", "PEP", "XOM", "CVX", "UNH", "HD", "COST", "WMT", "INTC",
             "PFE", "VZ", "T", "MRK", "ABBV", "TSLA", "NFLX", "DIS", "BAC", "CSCO"]

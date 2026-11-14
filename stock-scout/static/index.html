@@ -11,7 +11,7 @@ h1{margin:0;font-size:20px}main{max-width:980px;margin:0 auto;padding:16px}
 nav{display:flex;gap:6px;margin:12px 0;flex-wrap:wrap}
 nav button,.btn{border:1px solid var(--bd);background:var(--card);color:var(--tx);padding:8px 14px;border-radius:8px;cursor:pointer;font:inherit}
 nav button.on,.btn.p{background:var(--ac);color:#fff;border-color:var(--ac)}
-input{padding:8px 10px;border:1px solid var(--bd);border-radius:8px;background:var(--card);color:var(--tx);font:inherit;width:100%;max-width:420px}
+input{min-width:0;padding:8px 10px;border:1px solid var(--bd);border-radius:8px;background:var(--card);color:var(--tx);font:inherit;width:100%;max-width:420px}
 .card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px;margin:10px 0}
 .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.mu{color:var(--mu);font-size:13px}
 .score{font-size:26px;font-weight:700;min-width:56px;text-align:center}
@@ -39,11 +39,25 @@ table{border-collapse:collapse;width:100%}td,th{padding:6px 8px;border-bottom:1p
 <section id="one" class="hide">
  <div class="row"><input id="tk" placeholder="Ticker, p. ej. KO"><button class="btn p" onclick="one()">Analizar</button></div>
  <div id="oneOut"></div>
+ <details><summary>Mis datos (introducir las cifras a mano)</summary>
+ <p class="mu">Copia las cifras de tu broker o de Yahoo Finance. Deja vacío lo que no sepas. Porcentajes como número (15 = 15 %).</p>
+ <div class="cats">
+ <input id="m_ticker" placeholder="Ticker / nombre"><input id="m_price" placeholder="Precio actual" inputmode="decimal">
+ <input id="m_pe" placeholder="PER" inputmode="decimal"><input id="m_fpe" placeholder="PER futuro" inputmode="decimal">
+ <input id="m_peg" placeholder="PEG" inputmode="decimal"><input id="m_roe" placeholder="ROE %" inputmode="decimal">
+ <input id="m_margin" placeholder="Margen neto %" inputmode="decimal"><input id="m_de" placeholder="Deuda/recursos propios %" inputmode="decimal">
+ <input id="m_rg" placeholder="Crec. ingresos %" inputmode="decimal"><input id="m_eg" placeholder="Crec. beneficios %" inputmode="decimal">
+ <input id="m_r6" placeholder="Rentab. 6 meses %" inputmode="decimal"><input id="m_sma" placeholder="Media 200 sesiones" inputmode="decimal">
+ <input id="m_hi" placeholder="Máximo 52 semanas" inputmode="decimal"><input id="m_beta" placeholder="Beta" inputmode="decimal">
+ <input id="m_mc" placeholder="Capitalización" inputmode="decimal"><input id="m_fcf" placeholder="Caja libre (mismas unidades)" inputmode="decimal">
+ </div><button class="btn p" onclick="manual()">Analizar mis datos</button><div id="manualOut"></div></details>
 </section>
 <section id="learn" class="hide"></section>
 <p class="mu">⚠️ Herramienta educativa de cribado. No es asesoramiento financiero. Invertir conlleva riesgo de pérdida; diversifica y no inviertas dinero que necesites a corto plazo.</p>
 </main>
 <script src="learn.js"></script>
+<script src="engine.js"></script>
+<script src="demo.js"></script>
 <script>
 const $=s=>document.querySelector(s);
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
@@ -62,7 +76,27 @@ function card(r,open){
  <details ${open?'open':''}><summary>¿Por qué esta nota? Detalle y lección de cada métrica</summary>
  ${r.findings.map(f=>`<div class="f"><b class="${f.level}">${esc(f.label)}: ${esc(f.value)}</b> — ${esc(f.text)}<div class="lesson">📚 ${esc(f.lesson)}</div></div>`).join('')}</details></div>`;}
 function banner(mode){ $('#mode').innerHTML = mode==='demo'?'<div class="warn"><b>Modo demo:</b> cifras aproximadas de ejemplo, NO actuales. Para datos reales ejecuta <code>pip install yfinance</code> y reinicia el servidor.</div>':''; }
-async function run(t){ const r=await fetch('/api/analyze?tickers='+encodeURIComponent(t)); return r.json(); }
+async function livePrices(row){ // experimental: intenta refrescar precio/tendencia desde Yahoo (puede fallar por CORS)
+ try{const r=await fetch('https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(row.ticker)+'?range=1y&interval=1d');
+  const c=(await r.json()).chart.result[0].indicators.quote[0].close.filter(x=>x!=null);
+  const p=c[c.length-1];return {...row,price:p,ret_6m:p/c[Math.max(0,c.length-126)]-1,sma200:c.slice(-200).reduce((a,b)=>a+b)/Math.min(200,c.length),high_52w:Math.max(...c),source:'demo+precio'};
+ }catch(e){return row;}}
+async function runLocal(t){
+ const tk=(t.split(',').map(x=>x.trim().toUpperCase()).filter(Boolean));const list=tk.length?tk:UNIVERSE;
+ const errors=list.filter(k=>!DEMO[k]).map(k=>({ticker:k,error:'sin datos offline: usa «Mis datos» para introducirlos a mano'}));
+ const results=(await Promise.all(list.filter(k=>DEMO[k]).map(async k=>analyzeRaw(await livePrices({...DEMO[k],ticker:k,source:'demo'}))))); 
+ results.sort((a,b)=>(b.score||0)-(a.score||0));return {mode:'demo',results,errors};}
+async function run(t){
+ if(location.protocol==='file:') return runLocal(t);
+ try{const r=await fetch('/api/analyze?tickers='+encodeURIComponent(t));if(!r.ok)throw 0;return await r.json();}
+ catch(e){return runLocal(t);}}
+function manual(){
+ const g=id=>{const v=document.getElementById('m_'+id).value.trim();return v===''?null:parseFloat(v.replace(',','.'));};
+ const raw={ticker:(document.getElementById('m_ticker').value||'MI-ACCION').toUpperCase(),name:document.getElementById('m_ticker').value||'Mi acción',source:'manual',
+  price:g('price'),pe:g('pe'),forward_pe:g('fpe'),peg:g('peg'),roe:g('roe')/100,margin:g('margin')/100,debt_equity:g('de'),
+  rev_growth:g('rg')/100,earn_growth:g('eg')/100,ret_6m:g('r6')/100,sma200:g('sma'),high_52w:g('hi'),beta:g('beta'),market_cap:g('mc'),fcf:g('fcf')};
+ for(const k of ['roe','margin','rev_growth','earn_growth','ret_6m'])if(isNaN(raw[k]))raw[k]=null;
+ const r=analyzeRaw(raw);$('#manualOut').innerHTML=card(r,true);}
 async function scan(){
  $('#scanOut').innerHTML='<p class="mu">Analizando…</p>';
  const d=await run($('#list').value); banner(d.mode);
@@ -76,5 +110,6 @@ async function one(){
  $('#oneOut').innerHTML=d.results.length?card(d.results[0],true):`<p class="bad">${esc(d.errors[0]?.error||'Sin datos')}</p>`;
 }
 $('#learn').innerHTML=LEARN_HTML;
-fetch('/api/status').then(r=>r.json()).then(s=>banner(s.mode));
+document.querySelectorAll('[id^=m_]').forEach(i=>{const l=document.createElement('label');l.className='mu';l.style.display='block';l.textContent=i.placeholder;i.parentNode.insertBefore(l,i);l.appendChild(i);i.style.display='block';i.style.maxWidth='none';});
+fetch('/api/status').then(r=>r.json()).then(s=>banner(s.mode)).catch(()=>banner('demo'));
 </script></body></html>

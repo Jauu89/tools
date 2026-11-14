@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """Stock Scout: servidor local sin dependencias obligatorias.
 Uso:  python3 server.py [--port 8765] [--demo]"""
-import argparse, json, mimetypes, os
+import argparse, json, mimetypes, os, sys, threading, webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse, parse_qs
 import data, scoring
 
-STATIC = os.path.join(os.path.dirname(__file__), "static")
+BASE = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
+STATIC = os.path.join(BASE, "static")
 MODE = "live" if data.HAS_LIVE else "demo"
 
 def analyze_many(tickers):
@@ -49,9 +50,17 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--port", type=int, default=8765)
     ap.add_argument("--demo", action="store_true", help="forzar datos de ejemplo")
+    ap.add_argument("--no-browser", action="store_true", help="no abrir el navegador")
     a = ap.parse_args()
     if a.demo: MODE = "demo"
     print(f"Stock Scout en http://127.0.0.1:{a.port}  (modo: {MODE})")
     if MODE == "demo":
         print("Aviso: datos de ejemplo. Para datos reales:  pip install yfinance")
-    ThreadingHTTPServer(("127.0.0.1", a.port), H).serve_forever()
+    url = f"http://127.0.0.1:{a.port}"
+    if not a.no_browser:
+        threading.Timer(1.0, lambda: webbrowser.open(url)).start()
+    try:
+        ThreadingHTTPServer(("127.0.0.1", a.port), H).serve_forever()
+    except OSError:
+        print(f"El puerto {a.port} está ocupado. Prueba: --port 9000")
+        input("Pulsa Enter para salir")
