@@ -1,0 +1,30 @@
+name: Stock Scout ejecutables
+on:
+  workflow_dispatch:
+  push:
+    paths: ["stock-scout/**"]
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    defaults: { run: { working-directory: stock-scout } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install pyinstaller yfinance
+      - run: python build_html.py
+      - run: >
+          pyinstaller --onefile --name StockScout
+          --add-data "static${{ runner.os == 'Windows' && ';' || ':' }}static"
+          --add-data "demo_data.json${{ runner.os == 'Windows' && ';' || ':' }}."
+          --collect-all yfinance server.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: StockScout-${{ runner.os }}
+          path: stock-scout/dist/*
+      - uses: actions/upload-artifact@v4
+        if: runner.os == 'Linux'
+        with: { name: stock-scout-html, path: stock-scout/stock-scout.html }

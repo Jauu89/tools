@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Stock Scout</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--tx:#1b2230;--mu:#667085;--bd:#e3e6ec;--ac:#2457d6;--g:#15803d;--y:#b45309;--r:#b91c1c}
+@media(prefers-color-scheme:dark){:root{--bg:#0f131a;--card:#171c26;--tx:#e8ecf3;--mu:#9aa4b5;--bd:#283042;--ac:#6c9bff;--g:#4ade80;--y:#fbbf24;--r:#f87171}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,sans-serif}
+header{padding:16px;border-bottom:1px solid var(--bd);background:var(--card)}
+h1{margin:0;font-size:20px}main{max-width:980px;margin:0 auto;padding:16px}
+nav{display:flex;gap:6px;margin:12px 0;flex-wrap:wrap}
+nav button,.btn{border:1px solid var(--bd);background:var(--card);color:var(--tx);padding:8px 14px;border-radius:8px;cursor:pointer;font:inherit}
+nav button.on,.btn.p{background:var(--ac);color:#fff;border-color:var(--ac)}
+input{min-width:0;padding:8px 10px;border:1px solid var(--bd);border-radius:8px;background:var(--card);color:var(--tx);font:inherit;width:100%;max-width:420px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px;margin:10px 0}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.mu{color:var(--mu);font-size:13px}
+.score{font-size:26px;font-weight:700;min-width:56px;text-align:center}
+.tag{padding:2px 9px;border-radius:99px;font-size:12px;font-weight:600;border:1px solid currentColor}
+.good{color:var(--g)}.mid{color:var(--y)}.bad{color:var(--r)}
+.bar{height:8px;background:var(--bd);border-radius:4px;overflow:hidden;flex:1;min-width:80px}.bar i{display:block;height:100%;background:var(--ac)}
+.cats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px;margin:8px 0}
+details{margin-top:8px}summary{cursor:pointer;color:var(--ac)}
+.f{padding:8px 0;border-top:1px solid var(--bd)}.lesson{font-size:13px;color:var(--mu);margin-top:2px}
+.warn{background:#fef3c7;color:#78350f;border-radius:8px;padding:10px;margin:10px 0;font-size:14px}
+@media(prefers-color-scheme:dark){.warn{background:#3a2e0c;color:#fde68a}}
+h2{font-size:17px;margin:18px 0 6px}.hide{display:none}.flash{background:#fde68a;color:#000}
+select{border:1px solid var(--bd);border-radius:8px;background:var(--card);color:var(--tx);font:inherit}table{border-collapse:collapse;width:100%}td,th{padding:6px 8px;border-bottom:1px solid var(--bd);text-align:left;font-size:14px}
+</style></head><body>
+<header><h1>📈 Stock Scout</h1><div class="mu">Encuentra candidatas, entiende el porqué y aprende a hacerlo tú.</div></header>
+<main>
+<div id="mode"></div>
+<details class="card"><summary>⚡ Datos en tiempo real (opcional)</summary>
+<p class="mu">Con una clave <b>gratuita</b> de <a href="https://finnhub.io/register" target="_blank" rel="noopener">finnhub.io</a> obtienes cotizaciones de acciones de EE. UU. en directo (WebSocket) y fundamentales actualizados. La clave se guarda solo en este dispositivo. Los fondos de inversión publican su precio una vez al día: no hay tiempo real para ellos.</p>
+<div class="row"><input id="fhk" type="password" placeholder="Tu clave API de Finnhub" autocomplete="off"><button class="btn p" onclick="saveKey()">Guardar</button></div>
+<label class="mu"><input type="checkbox" id="auto" style="width:auto" onchange="autoRefresh()"> Refrescar la lista automáticamente cada 30 s</label>
+<div id="keyMsg" class="mu"></div></details>
+<nav><button data-t="scan" class="on">Oportunidades</button><button data-t="one">Analizar una acción</button><button data-t="funds">Fondos</button><button data-t="pf">Mi cartera</button><button data-t="learn">Aprende</button></nav>
+
+<section id="scan">
+ <div class="row"><input id="list" placeholder="Tickers separados por comas (vacío = lista por defecto)">
+ <button class="btn p" onclick="scan()">Buscar</button></div>
+ <div id="scanOut"></div>
+</section>
+<section id="one" class="hide">
+ <div class="row"><input id="tk" placeholder="Ticker, p. ej. KO"><button class="btn p" onclick="one()">Analizar</button></div>
+ <div id="oneOut"></div>
+ <details><summary>Mis datos (introducir las cifras a mano)</summary>
+ <p class="mu">Copia las cifras de tu broker o de Yahoo Finance. Deja vacío lo que no sepas. Porcentajes como número (15 = 15 %).</p>
+ <div class="cats">
+ <input id="m_ticker" placeholder="Ticker / nombre"><input id="m_price" placeholder="Precio actual" inputmode="decimal">
+ <input id="m_pe" placeholder="PER" inputmode="decimal"><input id="m_fpe" placeholder="PER futuro" inputmode="decimal">
+ <input id="m_peg" placeholder="PEG" inputmode="decimal"><input id="m_roe" placeholder="ROE %" inputmode="decimal">
+ <input id="m_margin" placeholder="Margen neto %" inputmode="decimal"><input id="m_de" placeholder="Deuda/recursos propios %" inputmode="decimal">
+ <input id="m_rg" placeholder="Crec. ingresos %" inputmode="decimal"><input id="m_eg" placeholder="Crec. beneficios %" inputmode="decimal">
+ <input id="m_r6" placeholder="Rentab. 6 meses %" inputmode="decimal"><input id="m_sma" placeholder="Media 200 sesiones" inputmode="decimal">
+ <input id="m_hi" placeholder="Máximo 52 semanas" inputmode="decimal"><input id="m_beta" placeholder="Beta" inputmode="decimal">
+ <input id="m_mc" placeholder="Capitalización" inputmode="decimal"><input id="m_fcf" placeholder="Caja libre (mismas unidades)" inputmode="decimal">
+ </div><button class="btn p" onclick="manual()">Analizar mis datos</button><div id="manualOut"></div></details>
+</section>
+<section id="funds" class="hide">
+ <p class="mu">Sube la ficha en PDF de Morningstar (uno o varios) o escribe los datos. Se extraen las cifras y <b>tú las revisas</b> antes de puntuar. El PDF se lee en tu dispositivo; no se envía a ningún servidor.</p>
+ <div class="row"><input type="file" id="pdfs" accept="application/pdf" multiple onchange="fundPdfs([...this.files]);this.value=''"></div>
+ <div id="fundMsg" class="mu"></div>
+ <details open><summary>Datos del fondo</summary><div class="cats" id="fundForm"></div><button class="btn p" onclick="addFund()">Añadir al análisis</button> <button class="btn" onclick="fundToPortfolio()">➕ Añadir a mi cartera</button></details>
+ <div id="fundOut"></div>
+</section>
+<section id="pf" class="hide"></section>
+<section id="learn" class="hide"></section>
+<p class="mu">⚠️ Herramienta educativa de cribado. No es asesoramiento financiero. Invertir conlleva riesgo de pérdida; diversifica y no inviertas dinero que necesites a corto plazo.</p>
+</main>
+<script src="learn.js"></script>
+<script src="engine.js"></script>
+<script src="demo.js"></script>
+<script src="funds.js"></script>
+<script src="live.js"></script>
+<script src="portfolio.js"></script>
+<script>
+const $=s=>document.querySelector(s);
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
+ document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('on',x===b));
+ ['scan','one','funds','pf','learn'].forEach(id=>$('#'+id).classList.toggle('hide',id!==b.dataset.t));});
+const cls=s=>s>=65?'good':s>=40?'mid':'bad';
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function card(r,open){
+ const vc=r.verdict==='Interesante'?'good':r.verdict==='A vigilar'?'mid':'bad';
+ return `<div class="card"><div class="row"><div class="score ${cls(r.score)}">${r.score??'–'}</div>
+ <div style="flex:1"><b>${esc(r.ticker)}</b> · ${esc(r.name)} <span class="mu">${esc(r.sector||'')} ${r.price?'· <span id="px-'+esc(r.ticker)+'">'+r.price.toFixed(2)+'</span> '+esc(r.currency):''}</span>
+ <div><span class="tag ${vc}">${esc(r.verdict)}</span></div></div></div>
+ <p>${esc(r.summary)}</p>
+ ${r.flags.map(f=>`<div class="bad">🚩 ${esc(f)}</div>`).join('')}
+ <div class="cats">${r.categories.map(c=>`<div><div class="mu">${c.name} (${Math.round(c.weight*100)}%)</div><div class="row"><div class="bar"><i style="width:${c.score}%"></i></div><b>${c.score}</b></div></div>`).join('')}</div>
+ <details ${open?'open':''}><summary>¿Por qué esta nota? Detalle y lección de cada métrica</summary>
+ ${r.findings.map(f=>`<div class="f"><b class="${f.level}">${esc(f.label)}: ${esc(f.value)}</b> — ${esc(f.text)}<div class="lesson">📚 ${esc(f.lesson)}</div></div>`).join('')}</details></div>`;}
+function banner(mode){ $('#mode').innerHTML = mode==='live-finnhub'?'<div class="warn" style="background:#dcfce7;color:#14532d">🟢 <b>Datos en directo</b> (Finnhub). Última actualización: '+new Date().toLocaleTimeString()+'</div>':mode==='demo'?'<div class="warn"><b>Modo demo:</b> cifras aproximadas de ejemplo, NO actuales. Para datos reales ejecuta <code>pip install yfinance</code> y reinicia el servidor.</div>':''; }
+async function livePrices(row){ // experimental: intenta refrescar precio/tendencia desde Yahoo (puede fallar por CORS)
+ try{const r=await fetch('https://query1.finance.yahoo.com/v8/finance/chart/'+encodeURIComponent(row.ticker)+'?range=1y&interval=1d');
+  const c=(await r.json()).chart.result[0].indicators.quote[0].close.filter(x=>x!=null);
+  const p=c[c.length-1];return {...row,price:p,ret_6m:p/c[Math.max(0,c.length-126)]-1,sma200:c.slice(-200).reduce((a,b)=>a+b)/Math.min(200,c.length),high_52w:Math.max(...c),source:'demo+precio'};
+ }catch(e){return row;}}
+async function runLocal(t){
+ const tk=(t.split(',').map(x=>x.trim().toUpperCase()).filter(Boolean));const list=tk.length?tk:UNIVERSE;
+ const errors=list.filter(k=>!DEMO[k]).map(k=>({ticker:k,error:'sin datos offline: usa «Mis datos» para introducirlos a mano'}));
+ const results=(await Promise.all(list.filter(k=>DEMO[k]).map(async k=>analyzeRaw(await livePrices({...DEMO[k],ticker:k,source:'demo'}))))); 
+ results.sort((a,b)=>(b.score||0)-(a.score||0));return {mode:'demo',results,errors};}
+async function run(t){
+ const tk=t.split(',').map(x=>x.trim().toUpperCase()).filter(Boolean);
+ if(fhKey()){try{const d=await runFinnhub(tk);if(d.results.length)return d;}catch(e){}}
+ if(location.protocol==='file:') return runLocal(t);
+ try{const r=await fetch('/api/analyze?tickers='+encodeURIComponent(t));if(!r.ok)throw 0;return await r.json();}
+ catch(e){return runLocal(t);}}
+function manual(){
+ const g=id=>{const v=document.getElementById('m_'+id).value.trim();return v===''?null:parseFloat(v.replace(',','.'));};
+ const raw={ticker:(document.getElementById('m_ticker').value||'MI-ACCION').toUpperCase(),name:document.getElementById('m_ticker').value||'Mi acción',source:'manual',
+  price:g('price'),pe:g('pe'),forward_pe:g('fpe'),peg:g('peg'),roe:g('roe')/100,margin:g('margin')/100,debt_equity:g('de'),
+  rev_growth:g('rg')/100,earn_growth:g('eg')/100,ret_6m:g('r6')/100,sma200:g('sma'),high_52w:g('hi'),beta:g('beta'),market_cap:g('mc'),fcf:g('fcf')};
+ for(const k of ['roe','margin','rev_growth','earn_growth','ret_6m'])if(isNaN(raw[k]))raw[k]=null;
+ const r=analyzeRaw(raw);$('#manualOut').innerHTML=card(r,true);}
+async function scan(quiet){
+ if(!quiet)$('#scanOut').innerHTML='<p class="mu">Analizando…</p>';
+ const d=await run($('#list').value); banner(d.mode);
+ $('#scanOut').innerHTML=`<table><tr><th>#</th><th>Ticker</th><th>Nota</th><th>Veredicto</th></tr>${d.results.map((r,i)=>`<tr><td>${i+1}</td><td>${esc(r.ticker)}</td><td class="${cls(r.score)}"><b>${r.score}</b></td><td>${esc(r.verdict)}</td></tr>`).join('')}</table>`
+  + d.results.slice(0,10).map(r=>card(r,false)).join('')
+  + (d.errors.length?`<p class="mu">Sin datos: ${d.errors.map(e=>esc(e.ticker+' ('+e.error+')')).join('; ')}</p>`:'');
+ if(d.mode==='live-finnhub')liveSocket(d.results.slice(0,10).map(r=>r.ticker));
+}
+async function one(){
+ const t=$('#tk').value.trim(); if(!t) return;
+ const d=await run(t); banner(d.mode);
+ $('#oneOut').innerHTML=d.results.length?card(d.results[0],true):`<p class="bad">${esc(d.errors[0]?.error||'Sin datos')}</p>`;
+}
+$('#learn').innerHTML=LEARN_HTML;
+fundFormInit();pfRender();$('#fhk').value=fhKey();
+function saveKey(){LS.set('fh_key',$('#fhk').value.trim());$('#keyMsg').textContent=fhKey()?'Clave guardada. Pulsa «Buscar» para usar datos en directo.':'Clave eliminada.';}
+let _t=null;function autoRefresh(){clearInterval(_t);if($('#auto').checked)_t=setInterval(()=>scan(true),30000);}
+document.querySelectorAll('[id^=m_]').forEach(i=>{const l=document.createElement('label');l.className='mu';l.style.display='block';l.textContent=i.placeholder;i.parentNode.insertBefore(l,i);l.appendChild(i);i.style.display='block';i.style.maxWidth='none';});
+fetch('/api/status').then(r=>r.json()).then(s=>banner(s.mode)).catch(()=>banner('demo'));
+</script></body></html>
