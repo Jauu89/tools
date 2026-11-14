@@ -78,3 +78,14 @@ def fetch_many(tickers, mode):
             return ("err", {"ticker": t.upper(), "error": str(e)[:200]})
     with ThreadPoolExecutor(max_workers=8) as ex:
         return list(ex.map(one, tickers))
+
+def fetch_quotes(tickers):
+    """Último precio de cada ticker (solo modo live)."""
+    def one(t):
+        try:
+            v = yf.Ticker(t).fast_info.get("last_price")
+            return t.upper(), (float(v) if v and v == v else None)
+        except Exception:
+            return t.upper(), None
+    with ThreadPoolExecutor(max_workers=8) as ex:
+        return dict(ex.map(one, tickers))

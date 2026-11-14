@@ -36,3 +36,11 @@ El lector de PDF (pdf.js) se descarga de cdnjs, así que necesita internet la pr
   WebSocket y fundamentales actualizados, solo acciones de EE. UU. Límite gratuito: 60 consultas/min.
 - **Servidor/ejecutable**: usa `yfinance` (casi tiempo real, ~15 min de retraso en muchas bolsas europeas) con caché de 1 h para fundamentales.
 - Los fondos publican precio una vez al día: no hay tiempo real posible.
+
+## Mi cartera (beneficios y pérdidas)
+Pestaña **Mi cartera**: apunta cada compra o venta (ISIN o ticker, nº de participaciones/acciones, precio, comisiones, fecha)
+y la app calcula valor actual, invertido, **ganancia/pérdida en € y %**, peso de cada posición y beneficio realizado por ventas
+(coste medio ponderado). Todo se guarda solo en el dispositivo; hay copia de seguridad/restauración en JSON.
+- **Precios**: edítalos a mano; las acciones/ETF se actualizan con Finnhub o Yahoo; los fondos, subiendo su ficha PDF de Morningstar (lee el VL).
+- **X-Ray de cartera**: sube el PDF de Morningstar para ver reparto de activos, regiones, sectores y mayores posiciones, con avisos de concentración.
+- Los PDF de Morningstar no contienen tus importes: participaciones y precio de compra los introduces tú (los ves en tu broker).

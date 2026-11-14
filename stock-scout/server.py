@@ -29,6 +29,10 @@ class H(BaseHTTPRequestHandler):
         u = urlparse(self.path)
         if u.path == "/api/status":
             return self._json({"mode": MODE, "universe": data.UNIVERSE})
+        if u.path == "/api/quote":
+            q = parse_qs(u.query).get("tickers", [""])[0]
+            tk = [t.strip().upper() for t in q.split(",") if t.strip()][:30]
+            return self._json({"mode": MODE, "prices": data.fetch_quotes(tk) if MODE == "live" else {}})
         if u.path == "/api/analyze":
             q = parse_qs(u.query).get("tickers", [""])[0]
             tickers = [t.strip().upper() for t in q.split(",") if t.strip()][:60] or data.UNIVERSE

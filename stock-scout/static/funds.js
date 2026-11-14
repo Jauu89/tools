@@ -75,20 +75,28 @@ function _n(s){if(s==null)return null;s=String(s).trim();
 function parseMorningstar(text){
  const t=text.replace(/\s+/g,' '),out={},f=(re)=>{const m=t.match(re);return m?m:null;};
  let m;
- if(m=f(/\b([A-Z]{2}[A-Z0-9]{9}[0-9])\b/))out.isin=m[1];
- if(m=f(/(?:Rating Morningstar|Morningstar Rating|Calificaci[oó]n Morningstar|Rating General)[^\d★]{0,40}([1-5])(?!\d)/i))out.stars=+m[1];
+ if(m=f(/ISIN\s+([A-Z]{2}[A-Z0-9]{9}[0-9])\b/)||f(/\b([A-Z]{2}[A-Z0-9]{9}[0-9])\b/))out.isin=m[1];
+ if(m=f(/Informe a \d{1,2} \S+ \d{4}\s+(.+?)\s+Categor[ií]a Morningstar/i))out.name=m[1].trim();
+ if(m=f(/VL\s*\((\d{2}\/\d{2}\/\d{4})\)\s*([A-Z]{3})\s*([\d.,]+)/)){out.nav=_n(m[3]);out.cur=m[2];out.nav_date=m[1];}
+ if(m=f(/Rating Morningstar\S{0,2}\s*(Q{1,5})\b/))out.stars=m[1].length;
+ else if(m=f(/(?:Rating Morningstar|Morningstar Rating|Calificaci[oó]n Morningstar|Rating General)[^\d★]{0,40}([1-5])(?!\d)/i))out.stars=+m[1];
  else if(m=f(/Morningstar[^★]{0,60}(★{1,5})/i))out.stars=m[1].length;
  if(m=f(/(?:Gastos corrientes|Ongoing Charge|Gastos Corrientes|Comisi[oó]n corriente|\bTER\b)[^\d]{0,40}(\d+(?:[.,]\d+)?)\s*%/i))out.ter=_n(m[1])/100;
- if(m=f(/Sharpe(?:\s*\d{1,2}\s*(?:a[ñn]os|years?|yrs?|y)\b)?[^\d-]{0,40}(-?\d+(?:[.,]\d+)?)/i))out.sharpe=_n(m[1]);
- if(m=f(/(?:Desviaci[oó]n est[aá]ndar|Standard Deviation|Std Dev)(?:\s*\d{1,2}\s*(?:a[ñn]os|years?|yrs?|y)\b)?[^\d-]{0,40}(\d+(?:[.,]\d+)?)/i))out.vol=_n(m[1])/100;
- if(m=f(/(?:\bAlfa\b|\bAlpha\b)(?:\s*\d{1,2}\s*(?:a[ñn]os|years?|yrs?|y)\b)?[^\d-]{0,40}(-?\d+(?:[.,]\d+)?)/i))out.alpha=_n(m[1]);
- if(m=f(/(?:Ca[ií]da m[aá]xima|Max(?:imum)? Drawdown)(?:\s*\d{1,2}\s*(?:a[ñn]os|years?|yrs?|y)\b)?[^\d-]{0,30}(-?\d+(?:[.,]\d+)?)/i))out.max_dd=Math.abs(_n(m[1]))/100;
- if(m=f(/(?:3 a[ñn]os|3 Year|3Y|3 Yr)[^\d-]{0,20}(-?\d+(?:[.,]\d+)?)/i))out.ret3=_n(m[1])/100;
- if(m=f(/(?:5 a[ñn]os|5 Year|5Y|5 Yr)[^\d-]{0,20}(-?\d+(?:[.,]\d+)?)/i))out.ret5=_n(m[1])/100;
- if(m=f(/(?:Patrimonio(?: del fondo)?|Tama[ñn]o del fondo|Fund Size|Net Assets)[^\d]{0,50}(\d[\d.,]*)\s*(mil millones|bn|billion|millones|mill|mln|m\b)?/i)){
+ if(m=f(/Sharpe(?:\s*\d{1,2}\s*(?:a[ñn]os|a|years?|yrs?|y)\b\.?)?[^\d-]{0,40}(-?\d+(?:[.,]\d+)?)/i))out.sharpe=_n(m[1]);
+ if(m=f(/(?:Desviaci[oó]n est[aá]ndar|Standard Deviation|Std Dev|Volatilidad(?: a)?)(?:\s*\d{1,2}\s*(?:a[ñn]os|a|years?|yrs?|y)\b\.?)?[^\d-]{0,40}(\d+(?:[.,]\d+)?)/i))out.vol=_n(m[1])/100;
+ if(m=f(/(?:\bAlfa\b|\bAlpha\b)(?:\s*\d{1,2}\s*(?:a[ñn]os|a|years?|yrs?|y)\b\.?)?[^\d-]{0,40}(-?\d+(?:[.,]\d+)?)/i))out.alpha=_n(m[1]);
+ if(m=f(/(?:Ca[ií]da m[aá]xima|Max(?:imum)? Drawdown)(?:\s*\d{1,2}\s*(?:a[ñn]os|a|years?|yrs?|y)\b\.?)?[^\d-]{0,30}(-?\d+(?:[.,]\d+)?)/i))out.max_dd=Math.abs(_n(m[1]))/100;
+ const NUM='(-?\\d+[.,]\\d+)';
+ for(const [yr,k,kc] of [[3,'ret3','cat_ret3'],[5,'ret5','cat_ret5']]){
+  const tb=t.match(new RegExp(yr+' a[ñn]os anualiz\\.?\\s+'+NUM+'\\s+'+NUM+'\\s+'+NUM,'i'));
+  if(tb){out[k]=_n(tb[1])/100;out[kc]=_n(tb[3])/100;}
+  else if(m=f(new RegExp('(?:'+yr+' a[ñn]os|'+yr+' Year|'+yr+'Y|'+yr+' Yr)[^\\d-]{0,20}'+NUM,'i')))out[k]=_n(m[1])/100;}
+ if(m=f(/Patrimonio de la serie \(mill\)\s*(?:\(\d{2}\/\d{2}\/\d{4}\)\s*)?([\d.,]+)/i))out.size=_n(m[1]);
+ else if(m=f(/(?:Patrimonio(?: del fondo)?|Tama[ñn]o del fondo|Fund Size|Net Assets)[^\d]{0,50}(\d[\d.,]*)\s*(mil millones|bn|billion|millones|mill|mln|m\b)?/i)){
   let v=_n(m[1]);if(v!=null){if(/mil millones|bn|billion/i.test(m[2]||''))v*=1000;out.size=v;}}
- if(m=f(/(?:Fecha de lanzamiento|Fecha de inicio|Inception Date|Fecha de creaci[oó]n)[^\d]{0,30}(?:\d{1,2}[\/.\-\s]+(?:\d{1,2}|[A-Za-zñ]+)[\/.\-\s]+)?(\d{4})/i))out.age=new Date().getFullYear()-(+m[1]);
- if(m=f(/(?:Categor[ií]a Morningstar|Morningstar Category)[: ]+([^\d★]{3,60}?)(?= {2}| Rating| Gastos| Ongoing|$)/i))out.category=m[1].trim();
+ if(m=f(/(?:Fecha de lanzamiento|Fecha de inicio|Inception Date|Fecha de creaci[oó]n|Fecha Creaci[oó]n)[^\d]{0,30}(?:\d{1,2}[\/.\-\s]+(?:\d{1,2}|[A-Za-zñ]+)[\/.\-\s]+)?(\d{4})/i))out.age=new Date().getFullYear()-(+m[1]);
+ if(m=f(/Categor[ií]a Morningstar\S{0,2}\s+(.+?)\s+Benchmark Morningstar/i))out.category=m[1].trim();
+ else if(m=f(/(?:Categor[ií]a Morningstar|Morningstar Category)[: ]+([^\d★]{3,60}?)(?= {2}| Rating| Gastos| Ongoing|$)/i))out.category=m[1].trim();
  return out;}
 async function pdfText(file){
  if(!window.pdfjsLib){await new Promise((ok,ko)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';s.onload=ok;s.onerror=()=>ko(new Error('No se pudo cargar el lector de PDF (hace falta conexión a internet)'));document.head.appendChild(s);});
@@ -100,11 +108,11 @@ async function pdfText(file){
 // ---- UI de fondos ----
 const FFIELDS=[["name","Nombre del fondo",0],["isin","ISIN",0],["category","Categoría",0],["ter","Gastos corrientes %",1],["stars","Estrellas Morningstar (1-5)",0],
  ["ret3","Rentab. anualizada 3 años %",1],["cat_ret3","Media categoría 3 años %",1],["ret5","Rentab. anualizada 5 años %",1],["cat_ret5","Media categoría 5 años %",1],
- ["sharpe","Ratio de Sharpe",0],["vol","Volatilidad (desv. estándar) %",1],["max_dd","Caída máxima %",1],["alpha","Alfa",0],["size","Patrimonio (millones)",0],["age","Antigüedad (años)",0]];
+ ["sharpe","Ratio de Sharpe",0],["vol","Volatilidad (desv. estándar) %",1],["max_dd","Caída máxima %",1],["alpha","Alfa",0],["size","Patrimonio (millones)",0],["age","Antigüedad (años)",0],["nav","Valor liquidativo (VL)",0],["cur","Divisa",0]];
 let FUNDS=[];try{FUNDS=JSON.parse(localStorage.getItem('funds')||'[]');}catch(e){}
 function fundFormInit(){
  const box=document.getElementById('fundForm');
- box.innerHTML=FFIELDS.map(([k,l])=>`<label class="mu" style="display:block">${l}<input id="f_${k}" ${['name','isin','category'].includes(k)?'':'inputmode="decimal"'} style="display:block;max-width:none"></label>`).join('');
+ box.innerHTML=FFIELDS.map(([k,l])=>`<label class="mu" style="display:block">${l}<input id="f_${k}" ${['name','isin','category','cur'].includes(k)?'':'inputmode="decimal"'} style="display:block;max-width:none"></label>`).join('');
  renderFunds();}
 function fundFill(o,fname){
  for(const [k,,pct] of FFIELDS){const el=document.getElementById('f_'+k);if(!el)continue;
@@ -113,7 +121,7 @@ function fundFill(o,fname){
   el.value=v==null?'':v;el.style.outline=(o[k]!=null)?'2px solid var(--g)':'';}}
 function fundRead(){const o={};
  for(const [k,,pct] of FFIELDS){const v=document.getElementById('f_'+k).value.trim();
-  if(['name','isin','category'].includes(k))o[k]=v;else if(v!==''){let x=parseFloat(v.replace(',','.'));if(!isNaN(x))o[k]=pct?x/100:x;}}
+  if(['name','isin','category','cur'].includes(k))o[k]=v;else if(v!==''){let x=parseFloat(v.replace(',','.'));if(!isNaN(x))o[k]=pct?x/100:x;}}
  if(!o.name)o.name=o.isin||'Fondo sin nombre';return o;}
 async function fundPdfs(files){
  const st=document.getElementById('fundMsg');
@@ -122,6 +130,7 @@ async function fundPdfs(files){
    const n=Object.keys(o).length;st.innerHTML=`<b>${esc(file.name)}</b>: se han detectado ${n} campos (resaltados en verde). <b>Revísalos y completa los que falten</b>, luego pulsa «Añadir al análisis».`;
    if(files.length>1){addFund();}
   }catch(e){st.textContent='Error: '+e.message+'. Puedes introducir los datos a mano.';}}}
+function fundToPortfolio(){const o=fundRead();pfPrefill({type:'fondo',name:o.name,key:o.isin||'',price:o.nav,cur:o.cur||'EUR'});}
 function addFund(){FUNDS.push(fundRead());FUNDS=FUNDS.slice(-30);try{localStorage.setItem('funds',JSON.stringify(FUNDS));}catch(e){}renderFunds();}
 function delFund(i){FUNDS.splice(i,1);try{localStorage.setItem('funds',JSON.stringify(FUNDS));}catch(e){}renderFunds();}
 function renderFunds(){

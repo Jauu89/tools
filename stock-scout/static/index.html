@@ -24,7 +24,7 @@ details{margin-top:8px}summary{cursor:pointer;color:var(--ac)}
 .warn{background:#fef3c7;color:#78350f;border-radius:8px;padding:10px;margin:10px 0;font-size:14px}
 @media(prefers-color-scheme:dark){.warn{background:#3a2e0c;color:#fde68a}}
 h2{font-size:17px;margin:18px 0 6px}.hide{display:none}.flash{background:#fde68a;color:#000}
-table{border-collapse:collapse;width:100%}td,th{padding:6px 8px;border-bottom:1px solid var(--bd);text-align:left;font-size:14px}
+select{border:1px solid var(--bd);border-radius:8px;background:var(--card);color:var(--tx);font:inherit}table{border-collapse:collapse;width:100%}td,th{padding:6px 8px;border-bottom:1px solid var(--bd);text-align:left;font-size:14px}
 </style></head><body>
 <header><h1>📈 Stock Scout</h1><div class="mu">Encuentra candidatas, entiende el porqué y aprende a hacerlo tú.</div></header>
 <main>
@@ -34,7 +34,7 @@ table{border-collapse:collapse;width:100%}td,th{padding:6px 8px;border-bottom:1p
 <div class="row"><input id="fhk" type="password" placeholder="Tu clave API de Finnhub" autocomplete="off"><button class="btn p" onclick="saveKey()">Guardar</button></div>
 <label class="mu"><input type="checkbox" id="auto" style="width:auto" onchange="autoRefresh()"> Refrescar la lista automáticamente cada 30 s</label>
 <div id="keyMsg" class="mu"></div></details>
-<nav><button data-t="scan" class="on">Oportunidades</button><button data-t="one">Analizar una acción</button><button data-t="funds">Fondos</button><button data-t="learn">Aprende</button></nav>
+<nav><button data-t="scan" class="on">Oportunidades</button><button data-t="one">Analizar una acción</button><button data-t="funds">Fondos</button><button data-t="pf">Mi cartera</button><button data-t="learn">Aprende</button></nav>
 
 <section id="scan">
  <div class="row"><input id="list" placeholder="Tickers separados por comas (vacío = lista por defecto)">
@@ -61,9 +61,10 @@ table{border-collapse:collapse;width:100%}td,th{padding:6px 8px;border-bottom:1p
  <p class="mu">Sube la ficha en PDF de Morningstar (uno o varios) o escribe los datos. Se extraen las cifras y <b>tú las revisas</b> antes de puntuar. El PDF se lee en tu dispositivo; no se envía a ningún servidor.</p>
  <div class="row"><input type="file" id="pdfs" accept="application/pdf" multiple onchange="fundPdfs([...this.files]);this.value=''"></div>
  <div id="fundMsg" class="mu"></div>
- <details open><summary>Datos del fondo</summary><div class="cats" id="fundForm"></div><button class="btn p" onclick="addFund()">Añadir al análisis</button></details>
+ <details open><summary>Datos del fondo</summary><div class="cats" id="fundForm"></div><button class="btn p" onclick="addFund()">Añadir al análisis</button> <button class="btn" onclick="fundToPortfolio()">➕ Añadir a mi cartera</button></details>
  <div id="fundOut"></div>
 </section>
+<section id="pf" class="hide"></section>
 <section id="learn" class="hide"></section>
 <p class="mu">⚠️ Herramienta educativa de cribado. No es asesoramiento financiero. Invertir conlleva riesgo de pérdida; diversifica y no inviertas dinero que necesites a corto plazo.</p>
 </main>
@@ -72,11 +73,12 @@ table{border-collapse:collapse;width:100%}td,th{padding:6px 8px;border-bottom:1p
 <script src="demo.js"></script>
 <script src="funds.js"></script>
 <script src="live.js"></script>
+<script src="portfolio.js"></script>
 <script>
 const $=s=>document.querySelector(s);
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
  document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('on',x===b));
- ['scan','one','funds','learn'].forEach(id=>$('#'+id).classList.toggle('hide',id!==b.dataset.t));});
+ ['scan','one','funds','pf','learn'].forEach(id=>$('#'+id).classList.toggle('hide',id!==b.dataset.t));});
 const cls=s=>s>=65?'good':s>=40?'mid':'bad';
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function card(r,open){
@@ -127,7 +129,7 @@ async function one(){
  $('#oneOut').innerHTML=d.results.length?card(d.results[0],true):`<p class="bad">${esc(d.errors[0]?.error||'Sin datos')}</p>`;
 }
 $('#learn').innerHTML=LEARN_HTML;
-fundFormInit();$('#fhk').value=fhKey();
+fundFormInit();pfRender();$('#fhk').value=fhKey();
 function saveKey(){LS.set('fh_key',$('#fhk').value.trim());$('#keyMsg').textContent=fhKey()?'Clave guardada. Pulsa «Buscar» para usar datos en directo.':'Clave eliminada.';}
 let _t=null;function autoRefresh(){clearInterval(_t);if($('#auto').checked)_t=setInterval(()=>scan(true),30000);}
 document.querySelectorAll('[id^=m_]').forEach(i=>{const l=document.createElement('label');l.className='mu';l.style.display='block';l.textContent=i.placeholder;i.parentNode.insertBefore(l,i);l.appendChild(i);i.style.display='block';i.style.maxWidth='none';});
