@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Boletus de Lugo</title>
+  <meta name="description" content="Galería para distinguir los boletus comestibles de sus dobles no comestibles y tóxicos.">
+  <meta name="theme-color" content="#2f4a2c">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="top">
+    <div class="wrap">
+      <h1>Boletus de Lugo</h1>
+      <p class="sub">Galería para distinguirlos, de comestibles a no comestibles</p>
+      <nav class="filters" id="filters" aria-label="Filtrar por grupo"></nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <aside class="aviso" role="note">
+      <strong>Esto es una ayuda para aprender, no un identificador.</strong>
+      Una foto nunca basta para decidir si una seta se come. Que la carne no cambie de color
+      <em>no garantiza</em> que sea comestible: el boleto amargo tampoco azulea.
+      Ante la mínima duda, consúltalo con alguien que sepa, por ejemplo una sociedad micológica.
+    </aside>
+
+    <details class="consejos">
+      <summary>Antes de llenar la cesta</summary>
+      <ul>
+        <li><strong>Mira los poros (la esponja).</strong> Blancos de joven, amarillos a media edad y verde oliva de viejo.
+            Si están amarillos, retira la esponja y espárcela por el monte: así se dispersan las esporas.</li>
+        <li><strong>Corta la base del pie en el monte</strong> para ver si tiene galerías de gusanos.
+            Si está agusanado, apártalo para que no contagie al resto de la cesta.</li>
+        <li><strong>Refrigera la cosecha</strong> al llegar a casa.</li>
+        <li>Recoge solo lo que vayas a aprovechar y respeta el entorno.</li>
+      </ul>
+      <small>Fuente: vídeo «Guía de Boletus: los cuatro fantásticos», de Natur Mountain.</small>
+    </details>
+
+    <div id="gallery"></div>
+
+    <footer class="pie">
+      <h2>Créditos de las fotos</h2>
+      <p>Todas las fotos vienen de <a href="https://commons.wikimedia.org" target="_blank" rel="noopener">Wikimedia Commons</a>
+         con licencia libre. Cada una enlaza a su página original, con autor y licencia.</p>
+      <ul id="credits"></ul>
+    </footer>
+  </main>
+
+  <button id="volver" class="volver" type="button" hidden></button>
+
+  <script src="data.js"></script>
+  <script src="credits.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
