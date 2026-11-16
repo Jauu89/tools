@@ -11,6 +11,10 @@ Necesitas Python 3 (suele venir en Mac y Linux; en Windows, instálalo desde pyt
 
 Se abre en <http://localhost:8080>. Solo es accesible desde tu ordenador.
 
+**Windows: «Control Inteligente de Aplicaciones ha bloqueado un archivo».** Bloquea `iniciar.bat` por venir de
+internet. No lo desactives (no se puede volver a activar). Abre la carpeta, escribe `cmd` en la barra de direcciones,
+y ejecuta tú mismo: `py -m http.server 8080 --bind 127.0.0.1`. Luego abre <http://localhost:8080>.
+
 ¿Por qué no abrir `index.html` directamente? Se ve igual, pero los navegadores guardan los datos
 de las páginas `file://` de forma poco fiable, y el mapa con tus puntos secretos los guardará en el navegador.
 
