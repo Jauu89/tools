@@ -30,6 +30,22 @@ de las páginas `file://` de forma poco fiable, y el mapa con tus puntos secreto
   el `.gitignore` ya lo evita.
 - Borrar los datos del navegador borra los puntos: exporta de vez en cuando.
 
+## Lluvia (lluvia.html)
+
+Panel con la lluvia de los últimos 30 días y la previsión de 14, la temperatura y la humedad del suelo
+(datos de [Open-Meteo](https://open-meteo.com), gratis y sin clave). Para cada especie estima una
+**ventana de fructificación**: cuando se acumula la lluvia necesaria repartida en varios días, calcula
+10-16 días después, y la valora con la temperatura (heladas, noches frías, calor) y la temporada.
+
+- Zona por defecto: entre O Corgo y Castroverde. Puedes añadir otras con **＋ Zona** (o «usar el centro del mapa»).
+- **Solo se consulta la zona**, con las coordenadas redondeadas a 2 decimales. Nunca tus puntos.
+- Los datos se guardan una hora en el navegador; sin conexión, se enseñan los últimos guardados.
+- **Ajustes del modelo**: los umbrales son de partida (vídeo divulgativo y fuentes generales) y no están
+  validados para Lugo. Se pueden cambiar por especie.
+- Es una estimación, no una garantía.
+
+`modelo.js` contiene el cálculo, sin depender del navegador, para reutilizarlo en las alarmas.
+
 ## Estructura
 
 - `data.js`: especies, grupos y pares "se confunde con" (se enlazan solos en las dos direcciones).
@@ -37,6 +53,8 @@ de las páginas `file://` de forma poco fiable, y el mapa con tus puntos secreto
 - `img/`: fotos.
 - `index.html`, `app.js`, `styles.css`: galería.
 - `mapa.html`, `mapa.js`, `mapa.css`: mapa de puntos.
+- `lluvia.html`, `lluvia.js`, `lluvia.css`: panel de lluvia y previsión.
+- `modelo.js`: modelo de fructificación (navegador y Node).
 - `vendor/leaflet/`: Leaflet 1.9.4 (BSD-2), incluido para no depender de ninguna CDN.
 
 ## Aviso

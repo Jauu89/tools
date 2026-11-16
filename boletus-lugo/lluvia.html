@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lluvia · Boletus de Lugo</title>
+  <meta name="theme-color" content="#2f4a2c">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="lluvia.css">
+</head>
+<body class="pagina-lluvia">
+  <header class="top">
+    <div class="wrap bar">
+      <h1>Boletus de Lugo</h1>
+      <nav class="menu" aria-label="Secciones">
+        <a href="index.html">Galería</a>
+        <a href="mapa.html">Mapa</a>
+        <a href="lluvia.html" aria-current="page">Lluvia</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="controles" aria-label="Zona">
+      <label class="campo-inline"><span>Zona</span>
+        <select id="zona"></select>
+      </label>
+      <button type="button" class="btn" id="b-actualizar">Actualizar</button>
+      <button type="button" class="btn" id="b-nueva">＋ Zona</button>
+      <span id="estado-datos" class="estado-datos" role="status"></span>
+    </section>
+
+    <form id="form-zona" class="form-zona" hidden>
+      <label class="campo"><span>Nombre</span><input type="text" id="z-nombre" maxlength="60" placeholder="Por ejemplo: Ancares"></label>
+      <div class="dos">
+        <label class="campo"><span>Latitud</span><input type="text" id="z-lat" inputmode="decimal" placeholder="43.02"></label>
+        <label class="campo"><span>Longitud</span><input type="text" id="z-lng" inputmode="decimal" placeholder="-7.38"></label>
+      </div>
+      <div class="acciones">
+        <button type="button" class="btn" id="b-centro">Usar el centro del mapa</button>
+        <button type="submit" class="btn primario">Guardar zona</button>
+        <button type="button" class="btn" id="b-cancelar-zona">Cancelar</button>
+      </div>
+      <p id="z-error" class="error" role="alert" hidden></p>
+    </form>
+
+    <p class="privacidad">Solo se consulta la <strong>zona</strong> (con las coordenadas redondeadas a 2 decimales, unos 1,1 km),
+       nunca tus puntos. Datos: <a href="https://open-meteo.com" target="_blank" rel="noopener">Open-Meteo</a>.</p>
+
+    <div id="aviso-error" class="aviso-error" role="alert" hidden></div>
+
+    <section id="tiles" class="tiles" aria-label="Lluvia acumulada"></section>
+
+    <h2 class="titulo-seccion">¿Qué dicen las condiciones?</h2>
+    <p class="nota-seccion">Estimación a partir de la lluvia y la temperatura. Toca una especie para ver su ventana en el gráfico.</p>
+    <section id="tarjetas" class="tarjetas" aria-label="Estado por especie"></section>
+
+    <h2 class="titulo-seccion">Lluvia, temperatura y suelo</h2>
+    <div class="viz" id="viz">
+      <ul class="leyenda" id="leyenda" aria-label="Leyenda"></ul>
+      <div class="viz-wrap" id="viz-wrap">
+        <svg id="svg" role="img" tabindex="0" aria-label="Gráfico de lluvia diaria, temperatura y humedad del suelo"></svg>
+        <div id="tip" class="tip" hidden></div>
+      </div>
+      <p class="viz-pie">Pasa el ratón o toca el gráfico para ver cada día. Con teclado, usa las flechas.</p>
+    </div>
+
+    <details class="tabla-det">
+      <summary>Ver los datos como tabla</summary>
+      <div class="tabla-caja"><table id="tabla"></table></div>
+    </details>
+
+    <details class="ajustes">
+      <summary>Ajustes del modelo</summary>
+      <p class="nota-seccion">Son valores de partida, sacados de un vídeo divulgativo y de fuentes generales; <strong>no están validados para Lugo</strong>.
+         Tus visitas te dirán cuáles ajustar.</p>
+      <div class="tabla-caja"><table id="ajustes-tabla"></table></div>
+      <div class="acciones"><button type="button" class="btn" id="b-reset">Restablecer valores</button></div>
+      <p id="ajuste-error" class="error" role="alert" hidden></p>
+    </details>
+
+    <footer class="pie">
+      <p>Esto es una estimación, no una garantía. Después de una ventana «probable» puede no salir nada, y puede salir algo
+         fuera de ella. Contrasta siempre en el monte.</p>
+    </footer>
+  </main>
+
+  <script src="modelo.js"></script>
+  <script src="lluvia.js"></script>
+</body>
+</html>
