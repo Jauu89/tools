@@ -20,3 +20,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 --remove-*
+
+# Copias de seguridad de tus puntos: NUNCA subirlas al repositorio (es publico)
+boletus-puntos-*.json
+*.boletus.json

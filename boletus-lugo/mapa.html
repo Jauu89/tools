@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mapa · Boletus de Lugo</title>
+  <meta name="theme-color" content="#2f4a2c">
+  <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="mapa.css">
+</head>
+<body class="pagina-mapa">
+  <header class="top">
+    <div class="wrap bar">
+      <h1>Boletus de Lugo</h1>
+      <nav class="menu" aria-label="Secciones">
+        <a href="index.html">Galería</a>
+        <a href="mapa.html" aria-current="page">Mapa</a>
+      </nav>
+    </div>
+  </header>
+
+  <div id="aviso-guardado" class="aviso-guardado" role="alert" hidden>
+    Este navegador no me deja guardar datos (¿modo privado?). Tus puntos se perderán al cerrar.
+    Usa «Exportar» para no perderlos.
+  </div>
+
+  <div class="app">
+    <div class="mapa-caja">
+      <div id="map" aria-label="Mapa de puntos"></div>
+      <div class="barra-mapa">
+        <button id="b-anadir" type="button" class="btn primario">＋ Añadir punto</button>
+        <button id="b-aqui" type="button" class="btn">📍 Mi ubicación</button>
+        <button id="b-todos" type="button" class="btn">Ver todos</button>
+      </div>
+      <div id="pista" class="pista" hidden>Toca el mapa donde está el punto. <button type="button" id="b-cancelar" class="btn mini">Cancelar</button></div>
+    </div>
+    <aside id="panel" class="panel" aria-live="polite"></aside>
+  </div>
+
+  <input id="f-importar" type="file" accept="application/json,.json" hidden>
+
+  <script src="vendor/leaflet/leaflet.js"></script>
+  <script src="data.js"></script>
+  <script src="mapa.js"></script>
+</body>
+</html>

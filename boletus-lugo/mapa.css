@@ -1,0 +1,88 @@
+/* ---------- Página del mapa ---------- */
+.pagina-mapa { height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+.pagina-mapa .top { position: static; padding: 8px 0; }
+.aviso-guardado { background: var(--danger-bg); color: var(--ink); border-bottom: 3px solid var(--danger);
+  padding: 8px 16px; font-size: .88rem; }
+
+.app { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 380px; }
+.mapa-caja { position: relative; min-height: 0; }
+#map { position: absolute; inset: 0; background: #cfd8c9; }
+.mapa-caja.anadiendo #map { cursor: crosshair; }
+.barra-mapa { position: absolute; top: 10px; left: 56px; z-index: 500; display: flex; gap: 6px; flex-wrap: wrap; }
+.pista { position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%); z-index: 500; background: var(--head);
+  color: var(--head-ink); padding: 10px 14px; border-radius: 999px; box-shadow: 0 6px 20px rgb(0 0 0 / .35);
+  display: flex; align-items: center; gap: 10px; font-size: .92rem; max-width: calc(100% - 24px); }
+
+.panel { background: var(--bg); border-left: 1px solid var(--line); overflow-y: auto; padding: 14px 16px 24px; }
+.panel h2 { margin: 0 0 8px; font-size: 1.15rem; }
+.panel h3 { margin: 18px 0 6px; font-size: 1rem; }
+
+/* Botones */
+.btn { font: inherit; font-size: .88rem; padding: 7px 12px; border-radius: 10px; border: 1px solid var(--line);
+  background: var(--surface); color: var(--ink); cursor: pointer; box-shadow: 0 1px 4px rgb(0 0 0 / .2); }
+.btn:hover { border-color: var(--head); }
+.btn.primario { background: var(--head); color: var(--head-ink); border-color: var(--head); font-weight: 600; }
+.btn.activo { background: #f0b429; color: #1f2a1d; border-color: #c48f10; }
+.btn.peligro { color: var(--danger); border-color: var(--danger); }
+.btn.mini { padding: 3px 9px; font-size: .8rem; box-shadow: none; }
+.btn:focus-visible, .fila:focus-visible, .x:focus-visible { outline: 3px solid #f0b429; outline-offset: 2px; }
+.acciones { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+
+/* Campos */
+.campo { display: grid; gap: 4px; margin: 10px 0; font-size: .9rem; }
+.campo > span { font-weight: 600; color: var(--muted); }
+input[type="text"], input[type="date"], input[type="search"], select, textarea {
+  font: inherit; width: 100%; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line);
+  background: var(--surface); color: var(--ink); }
+textarea { min-height: 96px; resize: vertical; }
+input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid #f0b429; outline-offset: 1px; }
+.coords { font-variant-numeric: tabular-nums; color: var(--muted); font-size: .85rem; }
+.estado { font-size: .8rem; color: var(--muted); min-height: 1.2em; }
+
+/* Especies */
+.especies { display: flex; flex-wrap: wrap; gap: 6px; }
+.especies label { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 999px;
+  border: 1px solid var(--line); background: var(--surface); font-size: .85rem; cursor: pointer; }
+.especies label:has(input:checked) { background: var(--ok-bg); border-color: var(--ok); }
+.especies input { accent-color: var(--ok); }
+
+/* Lista */
+.lista { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 8px; }
+.fila { width: 100%; text-align: left; font: inherit; display: grid; grid-template-columns: 22px 1fr; gap: 10px;
+  align-items: start; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line);
+  background: var(--surface); color: var(--ink); cursor: pointer; }
+.fila:hover { border-color: var(--head); }
+.fila strong { display: block; }
+.fila small { color: var(--muted); display: block; }
+.vacio { color: var(--muted); padding: 18px 4px; }
+.filtros { display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: 8px; }
+
+/* Visitas */
+.visitas { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.visitas li { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; font-size: .88rem;
+  display: grid; grid-template-columns: 1fr auto; gap: 4px 8px; }
+.visitas .nota { grid-column: 1 / -1; color: var(--muted); margin: 0; }
+.x { border: 0; background: none; color: var(--muted); cursor: pointer; font-size: 1.1rem; padding: 0 4px; border-radius: 6px; }
+.x:hover { color: var(--danger); }
+.nueva-visita { display: grid; gap: 8px; margin-top: 10px; padding: 10px; border: 1px dashed var(--line); border-radius: 12px; }
+.nueva-visita .dos { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+.pie-panel { margin-top: 22px; padding-top: 14px; border-top: 1px solid var(--line); font-size: .82rem; color: var(--muted); }
+.pie-panel p { margin: 6px 0; }
+
+/* ---------- Marcadores ---------- */
+.pin { background: none; border: 0; }
+.pin span { display: block; width: 24px; height: 24px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg);
+  background: var(--pin, #3b6fb6); border: 2px solid #fff; box-shadow: 0 1px 5px rgb(0 0 0 / .55); }
+.pin-sin { --pin: #3b6fb6; } .pin-nada { --pin: #8d8d8d; } .pin-poco { --pin: #e0a526; }
+.pin-bastante { --pin: #7cb342; } .pin-mucho { --pin: #2e7d32; }
+.pin.sel span { outline: 3px solid #f0b429; outline-offset: 1px; width: 28px; height: 28px; }
+.mini-pin { width: 16px; height: 16px; border-radius: 50%; background: var(--pin); margin-top: 3px; border: 2px solid var(--surface); box-shadow: 0 0 0 1px var(--line); }
+
+/* ---------- Móvil: mapa arriba, panel debajo ---------- */
+@media (max-width: 800px) {
+  .app { grid-template-columns: 1fr; grid-template-rows: 48% 52%; }
+  .panel { border-left: 0; border-top: 1px solid var(--line); }
+  .barra-mapa { left: 52px; right: 8px; }
+  .btn { padding: 8px 10px; }
+}

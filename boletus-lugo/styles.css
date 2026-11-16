@@ -26,6 +26,7 @@
 }
 
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 html { scroll-behavior: auto; }
 body {
   margin: 0; background: var(--bg); color: var(--ink);
@@ -60,6 +61,13 @@ body {
 .consejos small { color: var(--muted); }
 .chip:focus-visible, .ir:focus-visible, .thumb:focus-visible, .volver:focus-visible {
   outline: 3px solid #f0b429; outline-offset: 2px; }
+
+/* ---------- Menú ---------- */
+.bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.menu { display: flex; gap: 6px; }
+.menu a { color: var(--head-ink); text-decoration: none; padding: 6px 12px; border-radius: 999px; font-size: .9rem; opacity: .85; }
+.menu a[aria-current="page"] { background: var(--head-ink); color: var(--head); font-weight: 600; opacity: 1; }
+.menu a:focus-visible { outline: 3px solid #f0b429; outline-offset: 2px; }
 
 /* ---------- Aviso ---------- */
 .aviso { margin: 16px 0 8px; padding: 12px 14px; border-radius: var(--radius);
